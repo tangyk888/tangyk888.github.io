@@ -463,21 +463,67 @@
             return true;
         }
 
-        // 启动摄像头扫码
-        async function startScanner() {
-            try {
-                // 检查浏览器支持
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    alert('您的浏览器不支持摄像头访问，请使用手动输入或更换现代浏览器');
-                    return;
-                }
+// 启动摄像头扫码
+async function startScanner() {
+    try {
+        // 检查浏览器支持（这里要判断不支持的情况）
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert('您的浏览器不支持摄像头访问，请使用手动输入或更换现代浏览器');
+            return;
+        }
 
-                scannerContainer.style.display = 'block';
-                
-                // 初始化扫码器
-                html5QrCode = new Html5Qrcode("scanner-video");
-                
-                const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+        scannerContainer.style.display = 'block';
+        
+        // 初始化扫码器
+        html5QrCode = new Html5Qrcode("scanner-video");
+        
+        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+            console.log('扫码成功:', decodedText);
+            
+            // 先隐藏容器
+            scannerContainer.style.display = 'none';
+            
+            // 停止扫码
+            if (html5QrCode && isScanning) {
+                html5QrCode.stop().then(() => {
+                    isScanning = false;
+                    // 处理扫码结果
+                    handleScannedText(decodedText);
+                }).catch(err => {
+                    console.error('停止扫码失败', err);
+                    isScanning = false;
+                    handleScannedText(decodedText);
+                });
+            } else {
+                handleScannedText(decodedText);
+            }
+        };
+
+        const config = {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            rememberLastUsedCamera: true,
+            aspectRatio: 1.0
+        };
+
+        await html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            qrCodeSuccessCallback,
+            (errorMessage) => {
+                console.log('扫码中...', errorMessage);
+            }
+        );
+        
+        isScanning = true;
+        
+    } catch (err) {
+        console.error('启动摄像头失败:', err);
+        alert('无法启动摄像头，请确保已授予摄像头权限或使用手动输入');
+        scannerContainer.style.display = 'none';
+        isScanning = false;
+    }
+}
                     console.log('扫码成功:', decodedText);
                     
                     // 停止扫码
