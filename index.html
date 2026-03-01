@@ -44,7 +44,7 @@ table{width:100%;border-collapse:collapse}
 th{background:#f7f9fc;padding:12px 8px;text-align:left;border-bottom:2px solid #cbd5e1}
 td{padding:12px 8px;border-bottom:1px solid #e2e6ea}
 
-#scanner{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;display:flex;flex-direction:column;z-index:9999}
+#scanner{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;display:none;flex-direction:column;z-index:9999}
 #video{width:100%;height:80vh}
 #closeScan{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);padding:10px 20px;background:#ef4444;color:white;border:none;border-radius:8px}
 
@@ -119,7 +119,7 @@ let currentUser = null;
 
 function initUsers() {
   if (!localStorage.getItem("users")) {
-    const users = [{ username: "admin", password: "123456", role: "admin" }];
+    const users = [{ username: "1329923942@qq.com", password: "18802595319Xx", role: "admin" }];
     localStorage.setItem("users", JSON.stringify(users));
   }
 }
@@ -161,7 +161,7 @@ function renderUserList() {
     html += `
     <div class="user-item">
       <div>${u.username} (${u.role||"user"})</div>
-      ${u.username !== "admin" ? '<div class="del-user" onclick="delUser(\''+u.username+'\')">删除</div>' : ''}
+      ${u.username !== "1329923942@qq.com" ? '<div class="del-user" onclick="delUser(\''+u.username+'\')">删除</div>' : ''}
     </div>`;
   });
   document.getElementById("userList").innerHTML = html;
@@ -179,7 +179,7 @@ function addUser() {
   document.getElementById("newUserPwd").value = "";
 }
 function delUser(username) {
-  if (username === "admin") return alert("不能删除管理员");
+  if (username === "1329923942@qq.com") return alert("不能删除管理员");
   if (!confirm("确定删除？")) return;
   let users = getUsers();
   users = users.filter(x => x.username !== username);
