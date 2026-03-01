@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- jsQR 库用于二维码扫描 -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <!-- 统一的 Tailwind 配置 -->
     <script>
         tailwind.config = {
@@ -77,6 +79,11 @@
                 width: 2rem;
                 text-align: center;
             }
+            @keyframes scanMove {
+                0% { top: 0; }
+                50% { top: 100%; }
+                100% { top: 0; }
+            }
         }
     </style>
 </head>
@@ -124,8 +131,6 @@
                             <th class="border border-gray-300 px-4 py-3 text-left text-gray-700">仓位</th>
                             <th class="border border-gray-300 px-4 py-3 text-left text-gray-700">编码</th>
                             <th class="border border-gray-300 px-4 py-3 text-left text-gray-700">名称</th>
-                            <th class="border border-gray-300 px-4 py-3 text-left text-gray-700">备注</th>
-                            <th class="border border-gray-300 px-4 py-3 text-left text-gray-700 w-24">时间</th>
                             <th class="border border-gray-300 px-4 py-3 text-center text-gray-700 w-16">操作</th>
                         </tr>
                     </thead>
@@ -207,10 +212,7 @@
                     <input type="text" id="nameInput" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="例如: 前杠">
                 </div>
                 
-                <div>
-                    <label for="remarkInput" class="block text-gray-700 mb-1">备注:</label>
-                    <textarea id="remarkInput" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="可选" rows="2"></textarea>
-                </div>
+
                 
                 <div class="flex justify-end space-x-3 pt-2">
                     <button id="cancelInput" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100">
@@ -220,6 +222,44 @@
                         确认
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 摄像头扫码模态框 -->
+    <div id="cameraModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl p-4 w-full max-w-3xl animate-fade-in relative">
+            <button id="closeCameraModal" class="absolute top-4 right-4 text-white bg-gray-800 bg-opacity-50 hover:bg-opacity-70 rounded-full w-8 h-8 flex items-center justify-center">
+                <i class="fa fa-times"></i>
+            </button>
+            
+            <div class="text-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800">扫描二维码</h2>
+                <p class="text-gray-600 text-sm mt-1">请将二维码对准扫描区域</p>
+            </div>
+            
+            <div class="relative w-full" style="height: 400px;">
+                <video id="qrVideo" class="w-full h-full object-cover rounded-lg"></video>
+                <canvas id="qrCanvas" class="absolute top-0 left-0 w-full h-full hidden"></canvas>
+                
+                <!-- 扫描线动画 -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div class="w-3/4 h-3/4 border-2 border-green-500 rounded-lg relative">
+                        <div class="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-green-500 -mt-1 -ml-1"></div>
+                        <div class="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-green-500 -mt-1 -mr-1"></div>
+                        <div class="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-green-500 -mb-1 -ml-1"></div>
+                        <div class="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-green-500 -mb-1 -mr-1"></div>
+                        
+                        <div id="scanLine" class="absolute left-0 right-0 h-1 bg-green-500 opacity-70" style="top: 50%; animation: scanMove 2s linear infinite;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 flex justify-center">
+                <button id="switchCameraBtn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 flex items-center">
+                    <i class="fa fa-refresh mr-2"></i>
+                    切换摄像头
+                </button>
             </div>
         </div>
     </div>
@@ -248,6 +288,14 @@
         let lastSubmitData = '';
         const MIN_SUBMIT_INTERVAL = 500; // 最小提交间隔，单位毫秒
         
+        // 摄像头相关变量
+        let video = null;
+        let canvas = null;
+        let stream = null;
+        let scanInterval = null;
+        let currentCameraId = null;
+        let cameras = [];
+        
         // DOM 元素
         const tableBody = document.getElementById('tableBody');
         const emptyState = document.getElementById('emptyState');
@@ -262,7 +310,6 @@
         const locationInput = document.getElementById('locationInput');
         const codeInput = document.getElementById('codeInput');
         const nameInput = document.getElementById('nameInput');
-        const remarkInput = document.getElementById('remarkInput');
         const scanResultToast = document.getElementById('scanResultToast');
         const toastIcon = document.getElementById('toastIcon');
         const toastTitle = document.getElementById('toastTitle');
@@ -272,6 +319,11 @@
         const clearBtn = document.getElementById('clearBtn');
         const detailsSection = document.getElementById('detailsSection');
         const detailsTableBody = document.getElementById('detailsTableBody');
+        
+        // 摄像头相关DOM元素
+        const cameraModal = document.getElementById('cameraModal');
+        const closeCameraModal = document.getElementById('closeCameraModal');
+        const switchCameraBtn = document.getElementById('switchCameraBtn');
         
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
@@ -286,7 +338,7 @@
         // 绑定事件
         function bindEvents() {
             // 扫描按钮点击事件
-            scanBtn.addEventListener('click', startScan);
+            scanBtn.addEventListener('click', openCameraModal);
             
             // 手动输入按钮点击事件
             manualInputBtn.addEventListener('click', () => {
@@ -309,7 +361,6 @@
                 let location = locationInput.value.trim();
                 let code = codeInput.value.trim();
                 let name = nameInput.value.trim();
-                let remark = remarkInput.value.trim();
                 
                 if (!location && !code && !name) {
                     showToast('输入错误', '请至少填写一个字段', 'error');
@@ -318,7 +369,7 @@
                 
                 // 构建数据字符串并处理
                 const separator = separatorInput.value || ' ';
-                const content = `${location}${separator}${code}${separator}${name}${separator}${remark}`;
+                const content = `${location}${separator}${code}${separator}${name}`;
                 processScanData(content);
                 
                 manualInputModal.classList.add('hidden');
@@ -340,18 +391,171 @@
                     e.target.value = e.target.value.charAt(0);
                 }
             });
+            
+            // 关闭摄像头模态框
+            closeCameraModal.addEventListener('click', stopCamera);
+            
+            // 切换摄像头
+            switchCameraBtn.addEventListener('click', switchCamera);
         }
         
-        // 模拟扫描二维码（实际项目中应替换为真实的扫码库）
-        function startScan() {
+        // 打开摄像头模态框
+        function openCameraModal() {
+            cameraModal.classList.remove('hidden');
+            video = document.getElementById('qrVideo');
+            canvas = document.getElementById('qrCanvas');
+            
+            // 请求摄像头权限并启动扫描
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                .then(openCameraModal_success)
+                .catch(openCameraModal_error);
+            
+            function openCameraModal_success(mediaStream) {
+                stream = mediaStream;
+                video.srcObject = stream;
+                video.setAttribute('playsinline', true); // iOS Safari 支持
+                video.play();
+                
+                // 更新摄像头列表
+                updateCameraList();
+                
+                // 开始扫描
+                setTimeout(() => {
+                    scanInterval = setInterval(decodeQRCode, 200);
+                }, 1000);
+            }
+            
+            function openCameraModal_error(err) {
+                console.error("获取摄像头权限失败:", err);
+                cameraModal.classList.add('hidden');
+                
+                // 如果无法访问摄像头，使用模拟扫描作为备用方案
+                if (err.name === 'NotAllowedError' || err.name === 'NotFoundError') {
+                    showToast('摄像头不可用', '将使用模拟扫描功能', 'warning');
+                    startScanSimulation();
+                } else {
+                    showToast('错误', '无法访问摄像头: ' + err.message, 'error');
+                }
+            }
+        }
+        
+        // 启动摄像头扫描
+        function startCamera(cameraId = null) {
+            if (stream) {
+                stopCamera();
+            }
+            
+            const constraints = {
+                video: cameraId ? { deviceId: { exact: cameraId } } : { facingMode: 'environment' }
+            };
+            
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(function(mediaStream) {
+                    stream = mediaStream;
+                    video.srcObject = stream;
+                    video.play();
+                    
+                    if (cameraId) {
+                        currentCameraId = cameraId;
+                    }
+                    
+                    // 开始扫描
+                    if (!scanInterval) {
+                        scanInterval = setInterval(decodeQRCode, 200);
+                    }
+                })
+                .catch(function(err) {
+                    console.error("启动摄像头失败:", err);
+                    showToast('错误', '无法启动摄像头: ' + err.message, 'error');
+                });
+        }
+        
+        // 停止摄像头和扫描
+        function stopCamera() {
+            cameraModal.classList.add('hidden');
+            
+            if (scanInterval) {
+                clearInterval(scanInterval);
+                scanInterval = null;
+            }
+            
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            if (video) {
+                video.srcObject = null;
+            }
+        }
+        
+        // 切换摄像头
+        function switchCamera() {
+            if (cameras.length <= 1) {
+                showToast('提示', '没有检测到多个摄像头', 'info');
+                return;
+            }
+            
+            // 找到当前摄像头的索引
+            const currentIndex = cameras.findIndex(cam => cam.deviceId === currentCameraId);
+            // 切换到下一个摄像头
+            const nextIndex = (currentIndex + 1) % cameras.length;
+            const nextCameraId = cameras[nextIndex].deviceId;
+            
+            startCamera(nextCameraId);
+        }
+        
+        // 更新可用摄像头列表
+        function updateCameraList() {
+            navigator.mediaDevices.enumerateDevices()
+                .then(function(devices) {
+                    cameras = devices.filter(device => device.kind === 'videoinput');
+                    
+                    // 如果有多个摄像头，启用切换按钮
+                    switchCameraBtn.disabled = cameras.length <= 1;
+                })
+                .catch(function(err) {
+                    console.error("获取摄像头列表失败:", err);
+                });
+        }
+        
+        // 解码二维码
+        function decodeQRCode() {
+            if (!video.readyState) return;
+            
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "dontInvert",
+            });
+            
+            if (code) {
+                // 停止扫描
+                clearInterval(scanInterval);
+                scanInterval = null;
+                
+                // 处理扫描结果
+                processScanData(code.data);
+                
+                // 延迟关闭摄像头
+                setTimeout(stopCamera, 1000);
+            }
+        }
+        
+        // 模拟扫描二维码（备用方案）
+        function startScanSimulation() {
             // 模拟二维码扫描延迟
             scanBtn.disabled = true;
             scanBtn.classList.add('opacity-70');
             scanBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>扫描中...';
             
-            // 模拟扫描过程（实际项目中应替换为真实的扫码调用）
+            // 模拟扫描过程
             setTimeout(() => {
-                // 模拟二维码内容（实际项目中应从扫码库获取）
+                // 模拟二维码内容
                 const mockQrCodeData = generateMockQrCodeData();
                 
                 // 处理扫描数据
@@ -369,15 +573,13 @@
             const locations = ['A-1', 'A-2', 'B-1', 'B-2', 'C-1', 'C-2', 'D-1', 'D-2'];
             const codes = ['12345', '67890', '11223', '33445', '55667', '77889', '99001', '12345'];
             const names = ['前杠', '后杠', '左车门', '右车门', '发动机', '变速箱', '方向盘', '座椅'];
-            const remarks = ['', '紧急备件', '需要检查', '已损坏', '新品', '库存充足', '即将过期', '客户退回'];
             
             const randomLocation = locations[Math.floor(Math.random() * locations.length)];
             const randomCode = codes[Math.floor(Math.random() * codes.length)];
             const randomName = names[Math.floor(Math.random() * names.length)];
-            const randomRemark = remarks[Math.floor(Math.random() * remarks.length)];
             
             const separator = separatorInput.value || ' ';
-            return `${randomLocation}${separator}${randomCode}${separator}${randomName}${separator}${randomRemark}`;
+            return `${randomLocation}${separator}${randomCode}${separator}${randomName}`;
         }
         
         // 处理扫描数据
@@ -405,9 +607,8 @@
                 // 确保正确解析数据
                 const location = parts[0].trim();
                 const code = parts[1].trim();
-                // 第四个及以后的部分作为备注，第三个部分作为名称
-                const name = parts[2] ? parts[2].trim() : '';
-                const remark = parts.length > 3 ? parts.slice(3).join(' ').trim() : '';
+                // 第三个及以后的部分作为名称
+                const name = parts.slice(2).join(' ').trim();
                 
                 // 检查是否已存在相同仓位
                 const existingIndex = warehouseData.findIndex(item => item.location === location);
@@ -419,7 +620,6 @@
                         location,
                         code,
                         name,
-                        remark,
                         updatedAt: new Date().toISOString()
                     };
                     showToast('更新成功', `仓位 ${location} 的信息已更新`, 'success');
@@ -430,7 +630,6 @@
                         location,
                         code,
                         name,
-                        remark,
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString()
                     });
@@ -497,12 +696,6 @@
                     </td>
                     <td class="border border-gray-300 px-0 py-0">
                         <input type="text" class="w-full px-4 py-3 border-none focus:outline-none focus:ring-2 focus:ring-primary cell-input truncate" data-id="${item.id}" data-field="name" value="${item.name}" maxlength="50" title="${item.name}">
-                    </td>
-                    <td class="border border-gray-300 px-0 py-0">
-                        <input type="text" class="w-full px-4 py-3 border-none focus:outline-none focus:ring-2 focus:ring-primary cell-input truncate" data-id="${item.id}" data-field="remark" value="${item.remark || ''}" title="${item.remark || ''}">
-                    </td>
-                    <td class="border border-gray-300 px-4 py-3 text-gray-600 whitespace-nowrap">
-                        ${formatTime(item.updatedAt)}
                     </td>
                     <td class="border border-gray-300 px-4 py-3 text-center">
                         <div class="flex justify-center space-x-2">
@@ -625,7 +818,7 @@
             }
             
             // 创建CSV内容
-            let csvContent = "仓位,编码,名称,备注\n";
+            let csvContent = "仓位,编码,名称\n";
             
             warehouseData.forEach(item => {
                 // 处理CSV中的特殊字符，如逗号、引号等
@@ -638,7 +831,7 @@
                     return str;
                 };
                 
-                csvContent += `${escapeCsvField(item.location)},${escapeCsvField(item.code)},${escapeCsvField(item.name)},${escapeCsvField(item.remark)}\n`;
+                csvContent += `${escapeCsvField(item.location)},${escapeCsvField(item.code)},${escapeCsvField(item.name)}\n`;
             });
             
             // 创建Blob对象
@@ -689,7 +882,6 @@
                 { field: '仓位', value: item.location },
                 { field: '编码', value: item.code },
                 { field: '名称', value: item.name },
-                { field: '备注', value: item.remark || '无' },
                 { field: '创建时间', value: formatDateTime(item.createdAt) },
                 { field: '更新时间', value: formatDateTime(item.updatedAt) }
             ];
@@ -732,22 +924,11 @@
             });
         }
         
-        // 格式化时间（仅显示时:分:秒）
-        function formatTime(dateTimeString) {
-            const date = new Date(dateTimeString);
-            return date.toLocaleTimeString('zh-CN', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-        }
-        
         // 清空手动输入框
         function clearManualInputs() {
             locationInput.value = '';
             codeInput.value = '';
             nameInput.value = '';
-            remarkInput.value = '';
         }
         
         // 保存单元格更改
