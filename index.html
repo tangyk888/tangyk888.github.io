@@ -1,551 +1,149 @@
-<html lang="zh-CN"><head>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>仓库仓位查询系统 - 查询</title>
+    <title>访客登录 - 仓库仓位查询系统</title>
+    <!-- Tailwind CSS v3 -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#1e40af',
-                        secondary: '#3b82f6',
-                        accent: '#60a5fa',
-                        neutral: '#f3f4f6',
-                    }
-                }
-            }
-        }
-    </script>
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .bg-gradient-primary {
-                background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-            }
-            .card-shadow {
-                box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.1), 0 8px 10px -6px rgba(59, 130, 246, 0.1);
-            }
-            .input-focus {
-                @apply focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none;
-            }
-            .btn-primary {
-                @apply bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-all duration-200;
-            }
-            .btn-secondary {
-                @apply bg-white text-primary border border-primary px-4 py-2 rounded-lg hover:bg-primary/5 transition-all duration-200;
-            }
-            .btn-accent {
-                @apply bg-gradient-primary text-white px-6 py-3 rounded-lg hover:opacity-90 transition-all duration-200 text-lg font-medium;
-            }
-        }
-    </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <!-- Header -->
-    <header class="bg-white shadow-sm sticky top-0 z-30">
-        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center">
-                <button id="backButton" class="mr-4 text-gray-600 hover:text-primary">
-                    <i class="fa fa-arrow-left text-xl"></i>
-                </button>
-                <h1 class="text-xl font-bold text-gray-800">仓位查询</h1>
-            </div>
-            <div>
-                <button id="menuButton" class="text-gray-600 hover:text-primary p-2">
-                    <i class="fa fa-ellipsis-v text-xl"></i>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="container mx-auto px-4 py-6">
-        <!-- Search Form -->
-        <div class="bg-white rounded-xl p-6 card-shadow mb-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">查询条件</h2>
-            
-            <div class="space-y-4">
-                <!-- 编码查询 -->
-                <div>
-                    <label for="codeSearch" class="block text-sm font-medium text-gray-700 mb-1">编码</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                            <i class="fa fa-barcode"></i>
-                        </span>
-                        <input type="text" id="codeSearch" name="codeSearch" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg input-focus transition-all duration-200" placeholder="请输入编码">
-                    </div>
-                </div>
-
-                <!-- 名称查询 -->
-                <div>
-                    <label for="nameSearch" class="block text-sm font-medium text-gray-700 mb-1">名称</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                            <i class="fa fa-tag"></i>
-                        </span>
-                        <input type="text" id="nameSearch" name="nameSearch" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg input-focus transition-all duration-200" placeholder="请输入名称">
-                    </div>
-                </div>
-
-                <!-- 仓位查询 -->
-                <div>
-                    <label for="positionSearch" class="block text-sm font-medium text-gray-700 mb-1">仓位</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                            <i class="fa fa-map-marker"></i>
-                        </span>
-                        <input type="text" id="positionSearch" name="positionSearch" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg input-focus transition-all duration-200" placeholder="请输入仓位">
-                    </div>
-                </div>
-
-                <!-- Search Buttons -->
-                <div class="flex space-x-3 pt-2">
-                    <button id="searchButton" class="btn-primary flex-1 flex items-center justify-center">
-                        <i class="fa fa-search mr-2"></i>
-                        <span style="font-size: 18px;">查询</span>
-                    </button>
-                    <button id="scanButton" class="btn-secondary flex-1 flex items-center justify-center">
-                        <i class="fa fa-qrcode mr-2"></i>
-                        <span>扫码查询</span>
-                    </button>
-                    <button id="clearButton" class="btn-secondary flex-1 flex items-center justify-center">
-                        <i class="fa fa-refresh mr-2"></i>
-                        <span>清空</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick Input Section -->
-        <div class="bg-white rounded-xl p-6 card-shadow mb-6">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-semibold text-gray-800">快速录入</h2>
-                <button id="quickInputButton" class="text-primary hover:text-primary/80 text-sm flex items-center">
-                    <span>更多录入</span>
-                    <i class="fa fa-chevron-right ml-1 text-xs"></i>
-                </button>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <!-- 访客登录标题 -->
+            <div class="bg-blue-600 text-white p-6">
+                <h1 class="text-2xl font-bold text-center">访客登录</h1>
+                <p class="text-center text-blue-100 mt-1">无需存储的快速访问方式</p>
             </div>
             
-            <div class="space-y-4">
-                <div class="flex space-x-3">
-                    <div class="flex-1">
-                        <label for="quickPosition" class="block text-sm font-medium text-gray-700 mb-1">仓位</label>
-                        <input type="text" id="quickPosition" name="quickPosition" class="w-full px-3 py-2 border border-gray-300 rounded-lg input-focus transition-all duration-200" placeholder="仓位">
-                    </div>
-                    <div class="flex-1">
-                        <label for="quickCode" class="block text-sm font-medium text-gray-700 mb-1">编码</label>
-                        <input type="text" id="quickCode" name="quickCode" class="w-full px-3 py-2 border border-gray-300 rounded-lg input-focus transition-all duration-200" placeholder="编码">
-                    </div>
+            <!-- 登录选项 -->
+            <div class="p-6">
+                <div class="text-center mb-6">
+                    <p class="text-gray-600">请选择您的用户角色</p>
                 </div>
                 
-                <div>
-                    <label for="quickName" class="block text-sm font-medium text-gray-700 mb-1">名称</label>
-                    <input type="text" id="quickName" name="quickName" class="w-full px-3 py-2 border border-gray-300 rounded-lg input-focus transition-all duration-200" placeholder="请输入名称">
-                </div>
-                
-                <button id="quickSaveButton" class="btn-accent w-full flex items-center justify-center">
-                    <i class="fa fa-save mr-2"></i>
-                    <span>快速保存</span>
-                </button>
-            </div>
-        </div>
-    </main>
-
-    <!-- Menu Modal -->
-    <div id="menuModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-end justify-center">
-        <div class="bg-white rounded-t-xl w-full max-w-md p-6 transform transition-transform duration-300 translate-y-full" id="menuContent">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-lg font-semibold text-gray-800">菜单</h3>
-                <button id="closeMenuButton" class="text-gray-500 hover:text-gray-700">
-                    <i class="fa fa-times text-xl"></i>
-                </button>
-            </div>
-            
-            <div class="space-y-4">
-                <button id="userManagementButton" class="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div class="flex items-center">
-                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-primary mr-3">
-                            <i class="fa fa-users"></i>
+                <div class="space-y-4">
+                    <!-- 管理员登录按钮 -->
+                    <button id="loginAdmin" class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors flex items-center justify-center">
+                        <i class="fa fa-user-circle mr-3 text-xl"></i>
+                        <div class="text-left">
+                            <div class="font-semibold">管理员</div>
+                            <div class="text-sm text-green-100">完全访问权限</div>
                         </div>
-                        <span class="text-gray-800">用户管理</span>
-                    </div>
-                    <i class="fa fa-chevron-right text-gray-400"></i>
-                </button>
-                
-                <button id="settingsButton" class="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div class="flex items-center">
-                        <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 mr-3">
-                            <i class="fa fa-cog"></i>
-                        </div>
-                        <span class="text-gray-800">系统设置</span>
-                    </div>
-                    <i class="fa fa-chevron-right text-gray-400"></i>
-                </button>
-                
-                <button id="logoutButton" class="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div class="flex items-center">
-                        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 mr-3">
-                            <i class="fa fa-sign-out"></i>
-                        </div>
-                        <span class="text-gray-800">登出</span>
-                    </div>
-                    <i class="fa fa-chevron-right text-gray-400"></i>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- QR Code Scanner Modal -->
-    <div id="scannerModal" class="fixed inset-0 bg-black z-50 hidden flex flex-col">
-        <div class="flex justify-between items-center p-4 bg-black">
-            <button id="closeScannerButton" class="text-white p-2">
-                <i class="fa fa-times text-xl"></i>
-            </button>
-            <h3 class="text-white text-lg font-medium">扫描二维码</h3>
-            <button id="switchCameraButton" class="text-white p-2">
-                <i class="fa fa-refresh text-xl"></i>
-            </button>
-        </div>
-        
-        <div class="flex-1 relative">
-            <video id="video" class="w-full h-full object-cover"></video>
-            <canvas id="canvas" class="hidden absolute inset-0 w-full h-full"></canvas>
-            
-            <!-- Scanner Overlay -->
-            <div class="absolute inset-0 flex items-center justify-center">
-                <div class="relative w-64 h-64">
-                    <!-- Corner Markers -->
-                    <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white"></div>
-                    <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white"></div>
-                    <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white"></div>
-                    <div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white"></div>
+                    </button>
                     
-                    <!-- Scan Line Animation -->
-                    <div class="absolute left-0 right-0 h-1 bg-white bg-opacity-70 top-0" id="scanLine"></div>
+                    <!-- 普通用户登录按钮 -->
+                    <button id="loginUser" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors flex items-center justify-center">
+                        <i class="fa fa-user mr-3 text-xl"></i>
+                        <div class="text-left">
+                            <div class="font-semibold">普通用户</div>
+                            <div class="text-sm text-blue-100">查询和录入权限</div>
+                        </div>
+                    </button>
+                </div>
+                
+                <!-- 状态信息 -->
+                <div id="loginStatus" class="mt-6 p-4 rounded-md text-center hidden"></div>
+                
+                <!-- 系统信息 -->
+                <div class="mt-8 p-4 bg-gray-50 rounded-lg">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2">系统信息:</h3>
+                    <div class="text-xs text-gray-600 space-y-1">
+                        <div><i class="fa fa-info-circle mr-1 text-blue-500"></i> 账号: admin / admin123 (管理员)</div>
+                        <div><i class="fa fa-info-circle mr-1 text-blue-500"></i> 账号: user / user123 (普通用户)</div>
+                        <div><i class="fa fa-shield mr-1 text-green-500"></i> 本页面不使用浏览器存储</div>
+                    </div>
                 </div>
             </div>
             
-            <!-- Result Display -->
-            <div id="scanResult" class="absolute bottom-10 left-0 right-0 mx-auto w-4/5 bg-black bg-opacity-70 text-white p-4 rounded-lg hidden">
-                <p class="text-center text-lg" id="scanResultText"></p>
-                <div class="flex justify-center mt-3 space-x-4">
-                    <button id="confirmScanButton" class="bg-white text-black px-4 py-1 rounded">确认</button>
-                    <button id="cancelScanButton" class="bg-gray-700 text-white px-4 py-1 rounded">取消</button>
+            <!-- 底部链接 -->
+            <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                <div class="text-center text-sm text-gray-600 space-x-4">
+                    <span class="text-gray-600">
+                        <i class="fa fa-home mr-1"></i>首页
+                    </span>
+                    <span class="text-gray-400">|</span>
+                    <a href="test-login.html" class="text-blue-600 hover:underline">
+                        <i class="fa fa-wrench mr-1"></i>测试工具
+                    </a>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Toast Message -->
-    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg z-50 hidden opacity-0 transition-opacity duration-300">
-        <span id="toastMessage"></span>
     </div>
 
     <script>
-        // 检查用户是否已登录
-        if (!sessionStorage.getItem('currentUser')) {
-            window.location.href = 'index.html';
-        }
-
-        // 获取当前用户信息
-        const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
-
-        // 显示Toast消息
-        function showToast(message, duration = 3000) {
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toastMessage');
+        // 访客登录函数 - 使用URL参数而不是存储
+        function guestLogin(username, role) {
+            const statusDiv = document.getElementById('loginStatus');
             
-            toastMessage.textContent = message;
-            toast.classList.remove('hidden');
+            // 清除之前的状态
+            statusDiv.className = 'mt-6 p-4 rounded-md text-center hidden';
             
-            // 触发动画
-            setTimeout(() => {
-                toast.classList.add('opacity-100');
-            }, 10);
-            
-            // 定时隐藏
-            setTimeout(() => {
-                toast.classList.remove('opacity-100');
+            try {
+                // 显示登录成功消息
+                statusDiv.className = 'mt-6 p-4 rounded-md text-center bg-green-100 text-green-700';
+                statusDiv.innerHTML = `
+                    <i class="fa fa-check-circle text-xl mb-2"></i>
+                    <div>登录成功，正在跳转...</div>
+                    <div class="text-sm mt-1">角色: ${role === 'admin' ? '管理员' : '普通用户'}</div>
+                `;
+                statusDiv.classList.remove('hidden');
+                
+                console.log('访客登录:', { username, role });
+                
+                // 延迟跳转到查询页面，使用URL参数传递用户信息
                 setTimeout(() => {
-                    toast.classList.add('hidden');
-                }, 300);
-            }, duration);
-        }
-
-        // 返回按钮事件
-        document.getElementById('backButton').addEventListener('click', function() {
-            if (confirm('确定要退出系统吗？')) {
-                sessionStorage.removeItem('currentUser');
-                window.location.href = 'index.html';
-            }
-        });
-
-        // 菜单按钮事件
-        document.getElementById('menuButton').addEventListener('click', function() {
-            const menuModal = document.getElementById('menuModal');
-            const menuContent = document.getElementById('menuContent');
-            
-            menuModal.classList.remove('hidden');
-            setTimeout(() => {
-                menuContent.classList.remove('translate-y-full');
-            }, 10);
-        });
-
-        // 关闭菜单按钮事件
-        document.getElementById('closeMenuButton').addEventListener('click', function() {
-            const menuModal = document.getElementById('menuModal');
-            const menuContent = document.getElementById('menuContent');
-            
-            menuContent.classList.add('translate-y-full');
-            setTimeout(() => {
-                menuModal.classList.add('hidden');
-            }, 300);
-        });
-
-        // 点击菜单外部关闭菜单
-        document.getElementById('menuModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                document.getElementById('closeMenuButton').click();
-            }
-        });
-
-        // 用户管理按钮事件
-        document.getElementById('userManagementButton').addEventListener('click', function() {
-            showToast('用户管理功能开发中...');
-            document.getElementById('closeMenuButton').click();
-        });
-
-        // 系统设置按钮事件
-        document.getElementById('settingsButton').addEventListener('click', function() {
-            showToast('系统设置功能开发中...');
-            document.getElementById('closeMenuButton').click();
-        });
-
-        // 登出按钮事件
-        document.getElementById('logoutButton').addEventListener('click', function() {
-            if (confirm('确定要登出系统吗？')) {
-                sessionStorage.removeItem('currentUser');
-                window.location.href = 'index.html';
-            }
-        });
-
-        // 查询按钮事件
-        document.getElementById('searchButton').addEventListener('click', function() {
-            const codeSearch = document.getElementById('codeSearch').value.trim();
-            const nameSearch = document.getElementById('nameSearch').value.trim();
-            const positionSearch = document.getElementById('positionSearch').value.trim();
-            
-            // 构建查询参数
-            const queryParams = new URLSearchParams();
-            
-            if (codeSearch) queryParams.append('code', codeSearch);
-            if (nameSearch) queryParams.append('name', nameSearch);
-            if (positionSearch) queryParams.append('position', positionSearch);
-            
-            // 跳转到结果页面
-            window.location.href = `results.html?${queryParams.toString()}`;
-        });
-
-        // 清空按钮事件
-        document.getElementById('clearButton').addEventListener('click', function() {
-            document.getElementById('codeSearch').value = '';
-            document.getElementById('nameSearch').value = '';
-            document.getElementById('positionSearch').value = '';
-        });
-
-        // 快速录入按钮事件
-        document.getElementById('quickInputButton').addEventListener('click', function() {
-            window.location.href = 'input.html';
-        });
-
-        // 快速保存按钮事件
-        document.getElementById('quickSaveButton').addEventListener('click', function() {
-            const position = document.getElementById('quickPosition').value.trim();
-            const code = document.getElementById('quickCode').value.trim();
-            const name = document.getElementById('quickName').value.trim();
-            
-            if (!position || !code || !name) {
-                showToast('请填写完整信息');
-                return;
-            }
-            
-            // 获取现有仓位数据
-            let positions = JSON.parse(localStorage.getItem('warehousePositions')) || [];
-            
-            // 检查是否已存在相同仓位或编码
-            const existingPosition = positions.find(p => p.position === position || p.code === code);
-            if (existingPosition) {
-                showToast('仓位或编码已存在');
-                return;
-            }
-            
-            // 添加新仓位
-            const newPosition = {
-                id: Date.now().toString(),
-                position,
-                code,
-                name,
-                image: '',
-                details: '',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            };
-            
-            positions.push(newPosition);
-            localStorage.setItem('warehousePositions', JSON.stringify(positions));
-            
-            // 清空输入框
-            document.getElementById('quickPosition').value = '';
-            document.getElementById('quickCode').value = '';
-            document.getElementById('quickName').value = '';
-            
-            showToast('保存成功');
-        });
-
-        // 扫码按钮事件
-        document.getElementById('scanButton').addEventListener('click', function() {
-            const scannerModal = document.getElementById('scannerModal');
-            scannerModal.classList.remove('hidden');
-            startScanner();
-        });
-
-        // 关闭扫码按钮事件
-        document.getElementById('closeScannerButton').addEventListener('click', function() {
-            stopScanner();
-            const scannerModal = document.getElementById('scannerModal');
-            scannerModal.classList.add('hidden');
-        });
-
-        // 确认扫码结果按钮事件
-        document.getElementById('confirmScanButton').addEventListener('click', function() {
-            const scanResultText = document.getElementById('scanResultText').textContent;
-            
-            // 解析二维码数据（格式：仓位,编码,名称,详情）
-            const parts = scanResultText.split(',');
-            
-            if (parts.length >= 3) {
-                // 填充查询表单
-                document.getElementById('positionSearch').value = parts[0] || '';
-                document.getElementById('codeSearch').value = parts[1] || '';
-                document.getElementById('nameSearch').value = parts[2] || '';
+                    // 使用URL参数传递用户信息（Base64编码）
+                    const userInfo = { username, role, guest: true };
+                    const encodedUserInfo = btoa(JSON.stringify(userInfo));
+                    window.location.href = `search.html?user=${encodedUserInfo}`;
+                }, 1500);
                 
-                // 执行查询
-                document.getElementById('searchButton').click();
+            } catch (error) {
+                statusDiv.className = 'mt-6 p-4 rounded-md text-center bg-red-100 text-red-700';
+                statusDiv.innerHTML = `
+                    <i class="fa fa-exclamation-circle text-xl mb-2"></i>
+                    <div>登录失败</div>
+                    <div class="text-sm mt-1">${error.message}</div>
+                `;
+                statusDiv.classList.remove('hidden');
+                console.error('访客登录失败:', error);
             }
-            
-            // 关闭扫码界面
-            document.getElementById('closeScannerButton').click();
+        }
+        
+        // 管理员登录按钮
+        document.getElementById('loginAdmin').addEventListener('click', function() {
+            this.disabled = true;
+            this.classList.add('opacity-75');
+            guestLogin('admin', 'admin');
         });
-
-        // 取消扫码结果按钮事件
-        document.getElementById('cancelScanButton').addEventListener('click', function() {
-            document.getElementById('scanResult').classList.add('hidden');
-            continueScanning();
+        
+        // 普通用户登录按钮
+        document.getElementById('loginUser').addEventListener('click', function() {
+            this.disabled = true;
+            this.classList.add('opacity-75');
+            guestLogin('user', 'user');
         });
-
-        // 切换摄像头按钮事件
-        document.getElementById('switchCameraButton').addEventListener('click', function() {
-            toggleCamera();
-        });
-
-        // 扫描线动画
-        function animateScanLine() {
-            const scanLine = document.getElementById('scanLine');
-            scanLine.style.transition = 'top 2s linear';
-            scanLine.style.top = '100%';
+        
+        // 页面加载时的初始化
+        window.addEventListener('load', function() {
+            console.log('访客登录页面加载完成');
             
-            setTimeout(() => {
-                scanLine.style.transition = 'none';
-                scanLine.style.top = '0';
-                setTimeout(animateScanLine, 100);
-            }, 2000);
-        }
-
-        // 启动扫描线动画
-        animateScanLine();
-
-        // 扫码相关变量
-        let video = document.getElementById('video');
-        let canvas = document.getElementById('canvas');
-        let canvasContext = canvas.getContext('2d');
-        let stream = null;
-        let scanning = false;
-        let currentCamera = 'environment'; // 'environment' 或 'user'
-
-        // 启动扫码器
-        function startScanner() {
-            const constraints = {
-                video: { facingMode: currentCamera }
-            };
+            // 检查URL是否已有用户信息（用于测试）
+            const urlParams = new URLSearchParams(window.location.search);
+            const testUser = urlParams.get('test');
             
-            navigator.mediaDevices.getUserMedia(constraints)
-                .then(function(mediaStream) {
-                    stream = mediaStream;
-                    video.srcObject = stream;
-                    video.setAttribute('playsinline', true);
-                    video.play();
-                    scanning = true;
-                    requestAnimationFrame(tick);
-                })
-                .catch(function(err) {
-                    console.error('获取摄像头失败: ', err);
-                    showToast('无法访问摄像头，请检查权限设置');
-                    document.getElementById('closeScannerButton').click();
-                });
-        }
-
-        // 停止扫码器
-        function stopScanner() {
-            scanning = false;
-            if (stream) {
-                stream.getTracks().forEach(track => {
-                    track.stop();
-                });
-                stream = null;
-            }
-            video.srcObject = null;
-        }
-
-        // 切换摄像头
-        function toggleCamera() {
-            currentCamera = currentCamera === 'environment' ? 'user' : 'environment';
-            stopScanner();
-            startScanner();
-        }
-
-        // 继续扫描
-        function continueScanning() {
-            scanning = true;
-            requestAnimationFrame(tick);
-        }
-
-        // 扫描每一帧
-        function tick() {
-            if (!scanning) return;
-            
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                canvas.height = video.videoHeight;
-                canvas.width = video.videoWidth;
-                canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
-                const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                    inversionAttempts: "attemptBoth",
-                });
-                
-                if (code) {
-                    scanning = false;
-                    document.getElementById('scanResultText').textContent = code.data;
-                    document.getElementById('scanResult').classList.remove('hidden');
+            if (testUser) {
+                console.log('检测到测试参数:', testUser);
+                if (testUser === 'admin') {
+                    document.getElementById('loginAdmin').click();
+                } else if (testUser === 'user') {
+                    document.getElementById('loginUser').click();
                 }
             }
-            
-            if (scanning) {
-                requestAnimationFrame(tick);
-            }
-        }
+        });
     </script>
-
-</body></html>
+</body>
+</html>
