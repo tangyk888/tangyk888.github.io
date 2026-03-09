@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仓库仓位查询系统 - 开始盘点</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#10b981',
+                        danger: '#ef4444',
+                        dark: '#1e293b',
+                        'dark-bg': '#0f172a',
+                        'dark-card': '#1e293b',
+                    },
+                },
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card {
+                @apply bg-dark-card rounded-lg shadow-md p-6 transition-all duration-300 hover:shadow-lg hover:translate-y-[-2px];
+            }
+            .btn {
+                @apply px-4 py-3 rounded-md font-medium transition-all duration-300 transform hover:scale-105 active:scale-95;
+            }
+            .btn-primary {
+                @apply bg-primary text-white hover:bg-primary/90;
+            }
+            .btn-secondary {
+                @apply bg-secondary text-white hover:bg-secondary/90;
+            }
+            .btn-danger {
+                @apply bg-danger text-white hover:bg-danger/90;
+            }
+            .input {
+                @apply w-full px-4 py-3 bg-dark border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-white transition-all duration-300;
+            }
+            .fade-in {
+                animation: fadeIn 0.5s ease-in-out;
+            }
+            .slide-in {
+                animation: slideIn 0.3s ease-out;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes slideIn {
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+        }
+    </style>
+</head>
+<body class="bg-dark-bg min-h-screen text-white">
+    <!-- 顶部导航 -->
+    <header class="bg-dark sticky top-0 z-10 shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center">
+                <button id="backBtn" class="mr-4 text-gray-400 hover:text-white">
+                    <i class="fa fa-arrow-left text-xl"></i>
+                </button>
+                <h1 class="text-xl font-bold">YICHENGQIPEI</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-400">欢迎, <span class="text-white">admin</span></span>
+                <div class="relative">
+                    <button id="menuBtn" class="text-gray-400 hover:text-white">
+                        <i class="fa fa-ellipsis-v text-xl"></i>
+                    </button>
+                    <!-- 弹出菜单 -->
+                    <div id="menu" class="absolute right-0 mt-2 w-48 bg-dark-card rounded-md shadow-lg py-2 hidden">
+                        <a href="index.html" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white">返回主页</a>
+                        <a href="user-management.html" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white">用户管理</a>
+                        <a href="settings.html" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white">系统设置</a>
+                        <a href="login.html" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white">登出</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="container mx-auto px-4 py-2 pb-24">
+        <!-- 页面标题 -->
+        <div class="text-center mb-4">
+            <h1 class="text-4xl font-bold py-2">开始盘点</h1>
+        </div>
+
+        <!-- 盘点信息卡片 -->
+        <div class="flex space-x-4 mb-6">
+            <input type="text" id="inventoryDataInfo" class="input flex-1 py-3" placeholder="输入盘点文件导入" disabled>
+            <button id="startInventoryBtn" class="btn btn-primary w-10 h-10 flex items-center justify-center p-0" title="盘点文件导入">
+                <i class="fa fa-upload"></i>
+            </button>
+        </div>
+
+        <!-- 手输盘点卡片 -->
+        <div class="card mb-8 slide-in" style="animation-delay: 0.2s;">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center">
+                    <i class="fa fa-pencil text-primary mr-2"></i>
+                    <h2 class="text-lg font-semibold">手输盘点</h2>
+                </div>
+                <div class="flex items-center space-x-4">
+
+                    <button id="viewInventoryFileBtn" class="btn bg-blue-600 hover:bg-blue-500 text-white w-10 h-10 flex flex-col items-center justify-center p-0 text-xs" title="文件详情">
+                        <div class="flex justify-between w-8">
+                            <span>文</span>
+                            <span>件</span>
+                        </div>
+                        <div class="flex justify-between w-8">
+                            <span>详</span>
+                            <span>情</span>
+                        </div>
+                    </button>
+                    <button id="navBatchImportBtn" class="btn btn-secondary hover:bg-secondary/90 text-white w-10 h-10 flex flex-col items-center justify-center p-0 text-xs" title="数据导入">
+                        <div class="flex justify-between w-8">
+                            <span>数</span>
+                            <span>据</span>
+                        </div>
+                        <div class="flex justify-between w-8">
+                            <span>导</span>
+                            <span>入</span>
+                        </div>
+                    </button>
+                    <button id="cameraBtn" class="btn bg-purple-600 hover:bg-purple-500 text-white w-10 h-10 flex flex-col items-center justify-center p-0 text-xs" title="打开相机扫描">
+                        <div class="flex justify-between w-8">
+                            <span>相</span>
+                            <span>机</span>
+                        </div>
+                        <div class="flex justify-between w-8">
+                            <span>扫</span>
+                            <span>描</span>
+                        </div>
+                    </button>
+                    <button id="completeInventoryBtn" class="btn bg-green-600 hover:bg-green-500 text-white w-10 h-10 flex flex-col items-center justify-center p-0 text-xs" title="完成盘点">
+                        <div class="flex justify-between w-8">
+                            <span>完</span>
+                            <span>成</span>
+                        </div>
+                        <div class="flex justify-between w-8">
+                            <span>盘</span>
+                            <span>点</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg mb-6">
+                <div class="space-y-4">
+                    <div class="relative">
+                        <label class="block text-gray-400 mb-2">编码</label>
+                        <input type="text" id="currentCode" class="input" placeholder="输入编码">
+                        <div id="codeSuggestions" class="absolute z-10 w-full mt-1 bg-dark-card border border-gray-700 rounded-md shadow-lg hidden">
+                            <!-- 自动补全建议将在这里生成 -->
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <label class="block text-gray-400 mb-2">仓位</label>
+                        <input type="text" id="currentLocation" class="input" placeholder="输入仓位">
+                        <div id="locationSuggestions" class="absolute z-10 w-full mt-1 bg-dark-card border border-gray-700 rounded-md shadow-lg hidden">
+                            <!-- 自动补全建议将在这里生成 -->
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-2">数量</label>
+                        <div class="flex items-center">
+                            <input type="number" id="actualQuantity" class="input flex-1" placeholder="输入数量">
+                            <div class="flex space-x-2 ml-2">
+                                <button type="button" id="decreaseQuantity" class="btn bg-green-600 hover:bg-green-500 text-white w-10 h-10 flex items-center justify-center p-0" title="减少">
+                                    <i class="fa fa-minus"></i>
+                                </button>
+                                <button type="button" id="increaseQuantity" class="btn bg-green-600 hover:bg-green-500 text-white w-10 h-10 flex items-center justify-center p-0" title="增加">
+                                    <i class="fa fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex space-x-4">
+                <button id="addInventoryItemBtn" class="btn btn-secondary w-full">
+                    <i class="fa fa-plus mr-2"></i>添加
+                </button>
+            </div>
+        </div>
+
+        <!-- 当前盘点数据列表 -->
+        <div class="card slide-in" style="animation-delay: 0.3s;">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <i class="fa fa-list text-primary mr-2"></i>
+                    <h2 class="text-lg font-semibold">当前盘点数据</h2>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center">
+                        <span class="text-gray-400 mr-2">显示全部</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="showAllToggle" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+                    <button id="refreshCurrentInventoryBtn" class="btn bg-gray-700 text-white hover:bg-gray-600">
+                        <i class="fa fa-refresh"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-gray-700">
+                            <th class="py-3 px-4 text-left text-gray-400">编码</th>
+                            <th class="py-3 px-4 text-left text-gray-400">仓位</th>
+                            <th class="py-3 px-4 text-left text-gray-400">系统数量</th>
+                            <th class="py-3 px-4 text-left text-gray-400">实际数量</th>
+                            <th class="py-3 px-4 text-left text-gray-400">差异</th>
+                            <th class="py-3 px-4 text-right text-gray-400">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="currentInventoryTableBody">
+                        <!-- 当前盘点数据将通过JavaScript动态生成 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+
+
+    <!-- 文件详情模态框 -->
+    <div id="fileDetailsModal" class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-lg p-6 max-w-md w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">文件盘点详情</h3>
+                <button id="closeFileDetailsModal" class="text-gray-400 hover:text-white">
+                    <i class="fa fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4" id="fileDetailsContent">
+                <!-- 文件详情将通过JavaScript动态生成 -->
+            </div>
+            <div class="flex justify-end mt-6">
+                <button id="closeFileDetailsBtn" class="btn bg-gray-700 text-white hover:bg-gray-600">
+                    关闭
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 相机扫描模态框 -->
+    <div id="cameraModal" class="fixed inset-0 bg-black z-50 hidden">
+        <!-- 顶部控制栏 -->
+        <div class="absolute top-0 left-0 right-0 flex justify-between items-center p-4 z-10">
+            <button id="closeCameraModal" class="text-white hover:text-gray-300">
+                <i class="fa fa-times text-2xl"></i>
+            </button>
+            <h3 class="text-white font-semibold">配件标签扫描</h3>
+            <button id="flashToggle" class="text-white hover:text-gray-300">
+                <i class="fa fa-flash text-xl"></i>
+            </button>
+        </div>
+        
+        <!-- 模式切换 -->
+        <div class="absolute top-16 left-0 right-0 flex justify-center space-x-4 p-4 z-10">
+            <button id="modeSpecific" class="btn bg-primary text-white px-6">固定格式标签识别</button>
+            <button id="modeGeneral" class="btn bg-gray-700 text-white hover:bg-gray-600 px-6">通用OE号识别</button>
+        </div>
+        
+        <!-- 相机预览 -->
+        <div class="w-full h-full flex items-center justify-center">
+            <video id="cameraVideo" class="w-full h-full object-cover"></video>
+            <!-- 取景框 -->
+            <div class="absolute w-3/4 h-1/2 border-2 border-white/50 rounded-lg flex items-center justify-center">
+                <div class="w-4 h-4 border-t-2 border-l-2 border-white absolute top-0 left-0"></div>
+                <div class="w-4 h-4 border-t-2 border-r-2 border-white absolute top-0 right-0"></div>
+                <div class="w-4 h-4 border-b-2 border-l-2 border-white absolute bottom-0 left-0"></div>
+                <div class="w-4 h-4 border-b-2 border-r-2 border-white absolute bottom-0 right-0"></div>
+            </div>
+        </div>
+        
+        <!-- 底部控制栏 -->
+        <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center p-6 z-10">
+            <!-- 变焦选项 -->
+            <div class="flex space-x-2">
+                <button class="text-white hover:text-gray-300">0.5x</button>
+                <button class="text-white hover:text-gray-300">1x</button>
+                <button class="text-white hover:text-gray-300">2x</button>
+                <button class="text-white hover:text-gray-300">3x</button>
+                <button class="text-white hover:text-gray-300">5x</button>
+            </div>
+            
+            <!-- 快门按钮 -->
+            <button id="captureBtn" class="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center">
+                <div class="w-12 h-12 rounded-full bg-white"></div>
+            </button>
+            
+            <!-- 相册和摄像头切换 -->
+            <div class="flex space-x-4">
+                <input type="file" id="albumInput" accept="image/*" class="hidden">
+                <button id="albumBtn" class="text-white hover:text-gray-300">
+                    <i class="fa fa-image text-xl"></i>
+                </button>
+                <button id="cameraToggle" class="text-white hover:text-gray-300">
+                    <i class="fa fa-refresh text-xl"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 识别中提示 -->
+        <div id="recognizingOverlay" class="fixed inset-0 bg-black/70 flex items-center justify-center z-20 hidden">
+            <div class="text-white text-center">
+                <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-t-white border-r-white border-b-transparent border-l-transparent mb-4"></div>
+                <p class="text-xl">正在识别...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 完成盘点确认模态框 -->
+    <div id="completeInventoryModal" class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-lg p-6 max-w-md w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">确认完成盘点</h3>
+                <button id="closeCompleteInventoryModal" class="text-gray-400 hover:text-white">
+                    <i class="fa fa-times text-2xl"></i>
+                </button>
+            </div>
+            <p class="mb-6">确定要完成当前盘点吗？完成后将无法继续添加数据。</p>
+            <div class="flex justify-end space-x-4">
+                <button id="cancelCompleteInventoryBtn" class="btn bg-gray-700 text-white hover:bg-gray-600">取消</button>
+                <button id="confirmCompleteInventoryBtn" class="btn btn-primary">确认完成</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div id="deleteConfirmModal" class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-lg p-6 max-w-md w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">确认删除</h3>
+                <button id="closeDeleteConfirmModal" class="text-gray-400 hover:text-white">
+                    <i class="fa fa-times text-2xl"></i>
+                </button>
+            </div>
+            <p class="mb-6">确定要删除这条盘点记录吗？此操作不可恢复。</p>
+            <div class="flex justify-end space-x-4">
+                <button id="cancelDeleteBtn" class="btn bg-gray-700 text-white hover:bg-gray-600">取消</button>
+                <button id="confirmDeleteBtn" class="btn btn-danger">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 检查登录状态和登录时间
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        const loginTime = localStorage.getItem('loginTime');
+        const eightHoursInMs = 8 * 60 * 60 * 1000;
+        const currentTime = new Date().getTime();
+        
+        if (!currentUser || !loginTime || (currentTime - loginTime) > eightHoursInMs) {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('loginTime');
+            window.location.href = 'login.html';
+        }
+        
+        // 每60秒检查一次登录时间
+        setInterval(function() {
+            const currentTime = new Date().getTime();
+            const loginTime = localStorage.getItem('loginTime');
+            if (loginTime && (currentTime - loginTime) > eightHoursInMs) {
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('loginTime');
+                window.location.href = 'login.html';
+            }
+        }, 60000);
+
+        // 数据存储管理
+        const StorageManager = {
+            get: function(key) {
+                try {
+                    const data = localStorage.getItem(key);
+                    return data ? JSON.parse(data) : null;
+                } catch (error) {
+                    console.error('Error getting data from localStorage:', error);
+                    return null;
+                }
+            },
+            
+            set: function(key, value) {
+                try {
+                    localStorage.setItem(key, JSON.stringify(value));
+                    return true;
+                } catch (error) {
+                    console.error('Error setting data to localStorage:', error);
+                    return false;
+                }
+            },
+            
+            init: function() {
+                const storage = this.get('warehouseInventory');
+                if (!storage) {
+                    const initialData = {
+                        version: '1.0',
+                        lastUpdated: new Date().toISOString(),
+                        inventories: {
+                            current: null,
+                            completed: []
+                        },
+                        statistics: {
+                            totalItems: 0,
+                            totalDifferences: 0,
+                            accuracy: 0
+                        }
+                    };
+                    this.set('warehouseInventory', initialData);
+                } else {
+                    // 确保completed字段存在
+                    if (!storage.inventories.completed) {
+                        storage.inventories.completed = [];
+                        this.set('warehouseInventory', storage);
+                    }
+                }
+            },
+            
+            saveCurrentInventory: function(inventoryData) {
+                const storage = this.get('warehouseInventory');
+                storage.inventories.current = inventoryData;
+                storage.lastUpdated = new Date().toISOString();
+                return this.set('warehouseInventory', storage);
+            },
+            
+            saveCompletedInventory: function(inventoryData) {
+                const storage = this.get('warehouseInventory');
+                // 确保completed字段存在
+                if (!storage.inventories.completed) {
+                    storage.inventories.completed = [];
+                }
+                storage.inventories.completed.push(inventoryData);
+                storage.lastUpdated = new Date().toISOString();
+                return this.set('warehouseInventory', storage);
+            }
+        };
+
+        // 加载当前盘点数据
+        function loadCurrentInventory() {
+            const tableBody = document.getElementById('currentInventoryTableBody');
+            tableBody.innerHTML = '';
+            
+            const storage = StorageManager.get('warehouseInventory');
+            const currentInventory = storage ? storage.inventories.current : null;
+            
+            if (!currentInventory || !currentInventory.items || currentInventory.items.length === 0) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = `<td colspan="6" class="py-8 text-center text-gray-400">暂无当前盘点数据</td>`;
+                tableBody.appendChild(emptyRow);
+                return;
+            }
+            
+            // 筛选物品
+            let filteredItems = currentInventory.items;
+            if (!showAllItems) {
+                // 默认只显示有差异的物品
+                filteredItems = currentInventory.items.filter(item => {
+                    const difference = item.difference || 0;
+                    return difference !== 0;
+                });
+            }
+            
+            if (filteredItems.length === 0) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = `<td colspan="6" class="py-8 text-center text-gray-400">${showAllItems ? '暂无当前盘点数据' : '暂无有差异的盘点数据'}</td>`;
+                tableBody.appendChild(emptyRow);
+                return;
+            }
+            
+            filteredItems.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-700 hover:bg-gray-800';
+                
+                // 计算差异颜色
+                const difference = item.difference || 0;
+                const differenceClass = difference > 0 ? 'text-green-400' : difference < 0 ? 'text-red-400' : 'text-gray-400';
+                const differenceText = difference > 0 ? '+' + difference : difference;
+                
+                row.innerHTML = `
+                    <td class="py-3 px-4">${item.code || ''}</td>
+                    <td class="py-3 px-4">${item.location}</td>
+                    <td class="py-3 px-4">${item.systemQuantity || 0}</td>
+                    <td class="py-3 px-4">${item.actualQuantity}</td>
+                    <td class="py-3 px-4 ${differenceClass}">${differenceText}</td>
+                    <td class="py-3 px-4 text-right">
+                        <button class="text-danger hover:text-red-400 delete-item-btn" data-index="${index}">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // 为删除按钮添加事件监听器
+            document.querySelectorAll('.delete-item-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    showDeleteConfirm(index);
+                });
+            });
+        }
+
+        // 格式化时间函数
+        function formatTime(dateString) {
+            const date = new Date(dateString);
+            const year = date.getFullYear().toString().slice(-2); // 获取年份的后两位
+            const month = date.getMonth() + 1; // 月份从0开始，需要加1
+            const day = date.getDate();
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            return `${year}/${month}/${day} ${hours}:${minutes}`;
+        }
+
+        // 全局变量
+        let showAllItems = true; // 是否显示所有条目
+        let itemToDelete = -1; // 存储要删除的项目索引
+        let statusButtonCount = 0; // 状态按钮计数
+
+        // 计算系统数量总数
+        function calculateSystemQuantityTotal(items) {
+            if (!items || items.length === 0) {
+                return 0;
+            }
+            return items.reduce((total, item) => {
+                return total + (parseInt(item.systemQuantity) || 0);
+            }, 0);
+        }
+
+        // 计算正数差异的总和
+        function calculatePositiveDifferencesTotal(items) {
+            if (!items || items.length === 0) {
+                return 0;
+            }
+            return items.reduce((total, item) => {
+                const difference = parseInt(item.difference) || 0;
+                return total + (difference > 0 ? difference : 0);
+            }, 0);
+        }
+
+        // 状态按钮颜色循环变化函数
+        function toggleStatusButton(button) {
+            statusButtonCount++;
+            switch(statusButtonCount % 3) {
+                case 1:
+                    button.classList.remove('bg-white', 'text-black');
+                    button.classList.add('bg-green-500', 'text-white');
+                    button.innerHTML = '<i class="fa fa-check text-xs"></i>';
+                    break;
+                case 2:
+                    button.classList.remove('bg-green-500', 'text-white');
+                    button.classList.add('bg-red-500', 'text-white');
+                    button.innerHTML = '<i class="fa fa-times text-xs"></i>';
+                    break;
+                case 0:
+                    button.classList.remove('bg-red-500', 'text-white');
+                    button.classList.add('bg-white', 'text-black');
+                    button.innerHTML = '<i class="fa fa-circle-o text-xs"></i>';
+                    break;
+            }
+        }
+
+        // 显示删除确认模态框
+        function showDeleteConfirm(index) {
+            itemToDelete = index;
+            document.getElementById('deleteConfirmModal').classList.remove('hidden');
+        }
+
+        // 删除盘点项
+        function deleteItem(index) {
+            const storage = StorageManager.get('warehouseInventory');
+            if (!storage || !storage.inventories.current || !storage.inventories.current.items) {
+                return;
+            }
+
+            // 从当前盘点数据中删除指定索引的项目
+            const currentInventory = storage.inventories.current;
+            
+            // 注意：如果使用了筛选，需要找到实际在原始数组中的索引
+            let actualIndex = index;
+            if (!showAllItems) {
+                // 找到在原始数组中对应的项目
+                const filteredItems = currentInventory.items.filter(item => {
+                    const difference = item.difference || 0;
+                    return difference !== 0;
+                });
+                const itemToDelete = filteredItems[index];
+                actualIndex = currentInventory.items.findIndex(item => 
+                    item.code === itemToDelete.code && 
+                    item.location === itemToDelete.location
+                );
+            }
+
+            if (actualIndex !== -1) {
+                currentInventory.items.splice(actualIndex, 1);
+                StorageManager.saveCurrentInventory(currentInventory);
+                loadCurrentInventory();
+            }
+        }
+
+        // 初始化加载
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化存储结构
+            StorageManager.init();
+            
+            // 检查URL参数，获取fileId
+            const urlParams = new URLSearchParams(window.location.search);
+            const fileId = urlParams.get('fileId');
+            
+            // 如果URL中存在fileId参数，优先加载对应的文件数据
+            if (fileId) {
+                loadFileInventory(fileId);
+            } else {
+                // 检查是否存在现有的当前盘点数据
+                const storage = StorageManager.get('warehouseInventory');
+                let currentInventory = storage ? storage.inventories.current : null;
+                
+                // 如果存在当前盘点数据，直接加载
+                if (currentInventory) {
+                    // 显示当前盘点信息
+                    if (currentInventory.fileId) {
+                        const files = StorageManager.get('importHistory') || [];
+                        const file = files.find(f => f.id === currentInventory.fileId);
+                        if (file) {
+                            document.getElementById('inventoryDataInfo').value = `${formatTime(file.importTime)} ${file.fileName} 导入数量 ${file.count}`;
+                        }
+                    } else if (currentInventory.name) {
+                        document.getElementById('inventoryDataInfo').value = currentInventory.name;
+                    }
+                    // 加载当前盘点数据
+                    loadCurrentInventory();
+                } else {
+                    // 如果既没有当前盘点数据也没有fileId，自动创建一个手输盘点
+                    const newInventory = {
+                        id: 'INV-' + Date.now().toString().slice(-6),
+                        name: '手动盘点',
+                        startTime: new Date().toLocaleString('zh-CN'),
+                        status: 'in_progress',
+                        progress: 0,
+                        items: []
+                    };
+                    StorageManager.saveCurrentInventory(newInventory);
+                    document.getElementById('inventoryDataInfo').value = newInventory.name;
+                    loadCurrentInventory();
+                }
+            }
+            
+            // 菜单控制
+            document.getElementById('menuBtn').addEventListener('click', function() {
+                const menu = document.getElementById('menu');
+                menu.classList.toggle('hidden');
+            });
+
+            // 点击其他地方关闭菜单
+            document.addEventListener('click', function(e) {
+                const menu = document.getElementById('menu');
+                const menuBtn = document.getElementById('menuBtn');
+                if (!menu.contains(e.target) && !menuBtn.contains(e.target)) {
+                    menu.classList.add('hidden');
+                }
+            });
+
+            // 返回按钮
+            document.getElementById('backBtn').addEventListener('click', function() {
+                window.location.href = 'inventory.html';
+            });
+
+            // 盘点文件导入按钮
+            document.getElementById('startInventoryBtn').addEventListener('click', function() {
+                // 跳转到盘点文件管理页面
+                window.location.href = 'inventory-files.html';
+            });
+
+
+
+
+
+            // 底部导航栏数据导入按钮
+            document.getElementById('navBatchImportBtn').addEventListener('click', function() {
+                window.location.href = 'batch-import.html';
+            });
+
+
+
+
+
+            // 添加盘点项按钮
+            document.getElementById('addInventoryItemBtn').addEventListener('click', function() {
+                const code = document.getElementById('currentCode').value;
+                const location = document.getElementById('currentLocation').value;
+                const actualQuantity = document.getElementById('actualQuantity').value;
+                
+                const storage = StorageManager.get('warehouseInventory');
+                
+                // 确保存储结构存在
+                if (!storage) {
+                    StorageManager.init();
+                    return;
+                }
+                
+                // 如果当前盘点不存在，创建一个新的
+                if (!storage.inventories.current) {
+                    storage.inventories.current = {
+                        id: 'INV-' + Date.now().toString().slice(-6),
+                        name: '手动盘点',
+                        startTime: new Date().toLocaleString('zh-CN'),
+                        status: 'in_progress',
+                        progress: 0,
+                        items: []
+                    };
+                }
+                
+                // 保存当前输入的数据
+                if (location && actualQuantity) {
+                    // 计算系统数量
+                    const systemQuantity = getSystemQuantity(location, code);
+                    
+                    // 检查是否已存在相同编码的记录
+                    const existingItemIndex = storage.inventories.current.items.findIndex(item => item.code === code && item.location === location);
+                    
+                    if (existingItemIndex !== -1) {
+                        // 存在相同编码的记录，累加数量
+                        const existingItem = storage.inventories.current.items[existingItemIndex];
+                        const newActualQuantity = parseInt(existingItem.actualQuantity) + parseInt(actualQuantity);
+                        const newDifference = calculateDifference(newActualQuantity, systemQuantity);
+                        
+                        // 更新现有记录
+                        storage.inventories.current.items[existingItemIndex] = {
+                            ...existingItem,
+                            actualQuantity: newActualQuantity.toString(),
+                            difference: newDifference,
+                            timestamp: new Date().toLocaleString('zh-CN')
+                        };
+                    } else {
+                        // 不存在相同编码的记录，添加新记录
+                        const difference = calculateDifference(actualQuantity, systemQuantity);
+                        
+                        storage.inventories.current.items.push({
+                            code: code,
+                            location: location,
+                            systemQuantity: systemQuantity,
+                            actualQuantity: actualQuantity,
+                            difference: difference,
+                            timestamp: new Date().toLocaleString('zh-CN')
+                        });
+                    }
+                    
+                    // 保存到存储
+                    StorageManager.saveCurrentInventory(storage.inventories.current);
+                    
+                    // 重置表单
+                    document.getElementById('currentCode').value = '';
+                    document.getElementById('currentLocation').value = '';
+                    document.getElementById('actualQuantity').value = '';
+                    
+                    // 加载当前盘点数据
+                    loadCurrentInventory();
+                }
+            });
+
+            // 查看数据文件按钮
+            document.getElementById('viewInventoryFileBtn').addEventListener('click', function() {
+                showFileDetails();
+            });
+
+
+
+            // 关闭文件详情模态框
+            document.getElementById('closeFileDetailsModal').addEventListener('click', function() {
+                document.getElementById('fileDetailsModal').classList.add('hidden');
+            });
+
+            document.getElementById('closeFileDetailsBtn').addEventListener('click', function() {
+                document.getElementById('fileDetailsModal').classList.add('hidden');
+            });
+
+            // 完成盘点按钮
+            document.getElementById('completeInventoryBtn').addEventListener('click', function() {
+                document.getElementById('completeInventoryModal').classList.remove('hidden');
+            });
+            
+            // 关闭完成盘点确认模态框
+            document.getElementById('closeCompleteInventoryModal').addEventListener('click', function() {
+                document.getElementById('completeInventoryModal').classList.add('hidden');
+            });
+            
+            // 取消完成盘点
+            document.getElementById('cancelCompleteInventoryBtn').addEventListener('click', function() {
+                document.getElementById('completeInventoryModal').classList.add('hidden');
+            });
+            
+            // 确认完成盘点
+            document.getElementById('confirmCompleteInventoryBtn').addEventListener('click', function() {
+                document.getElementById('completeInventoryModal').classList.add('hidden');
+                completeInventory();
+            });
+
+            // 删除确认模态框事件监听器
+            document.getElementById('closeDeleteConfirmModal').addEventListener('click', function() {
+                document.getElementById('deleteConfirmModal').classList.add('hidden');
+                itemToDelete = -1;
+            });
+
+            document.getElementById('cancelDeleteBtn').addEventListener('click', function() {
+                document.getElementById('deleteConfirmModal').classList.add('hidden');
+                itemToDelete = -1;
+            });
+
+            document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+                if (itemToDelete !== -1) {
+                    deleteItem(itemToDelete);
+                }
+                document.getElementById('deleteConfirmModal').classList.add('hidden');
+                itemToDelete = -1;
+            });
+
+            // 完成盘点函数
+            function completeInventory() {
+                const code = document.getElementById('currentCode').value;
+                const location = document.getElementById('currentLocation').value;
+                const actualQuantity = document.getElementById('actualQuantity').value;
+                
+                const storage = StorageManager.get('warehouseInventory');
+                
+                // 确保存储结构存在
+                if (!storage) {
+                    StorageManager.init();
+                    return;
+                }
+                
+                // 如果当前盘点不存在，创建一个新的
+                if (!storage.inventories.current) {
+                    storage.inventories.current = {
+                        id: 'INV-' + Date.now().toString().slice(-6),
+                        name: '手动盘点',
+                        startTime: new Date().toLocaleString('zh-CN'),
+                        status: 'in_progress',
+                        progress: 0,
+                        items: []
+                    };
+                }
+                
+                // 保存当前输入的数据
+                if (location && actualQuantity) {
+                    // 计算系统数量
+                    const systemQuantity = getSystemQuantity(location, code);
+                    
+                    // 检查是否已存在相同编码的记录
+                    const existingItemIndex = storage.inventories.current.items.findIndex(item => item.code === code && item.location === location);
+                    
+                    if (existingItemIndex !== -1) {
+                        // 存在相同编码的记录，累加数量
+                        const existingItem = storage.inventories.current.items[existingItemIndex];
+                        const newActualQuantity = parseInt(existingItem.actualQuantity) + parseInt(actualQuantity);
+                        const newDifference = calculateDifference(newActualQuantity, systemQuantity);
+                        
+                        // 更新现有记录
+                        storage.inventories.current.items[existingItemIndex] = {
+                            ...existingItem,
+                            actualQuantity: newActualQuantity.toString(),
+                            difference: newDifference,
+                            timestamp: new Date().toLocaleString('zh-CN')
+                        };
+                    } else {
+                        // 不存在相同编码的记录，添加新记录
+                        const difference = calculateDifference(actualQuantity, systemQuantity);
+                        
+                        storage.inventories.current.items.push({
+                                    code: code,
+                                    location: location,
+                                    systemQuantity: systemQuantity,
+                                    actualQuantity: actualQuantity,
+                                    difference: difference,
+                                    timestamp: new Date().toLocaleString('zh-CN')
+                                });
+                    }
+                }
+                
+                const currentInventory = storage.inventories.current;
+                
+                // 只有在手输盘点（没有导入文件）的情况下，才确保手输盘点独立
+                // 如果有导入文件，保持文件ID不变
+                
+                // 检查是否是文件盘点，如果是，处理未盘点项目
+                if (currentInventory.fileId) {
+                    // 获取导入文件数据
+                    const importHistory = StorageManager.get('importHistory') || [];
+                    const currentFile = importHistory.find(file => file.id === currentInventory.fileId);
+                    
+                    if (currentFile && currentFile.data) {
+                        // 获取已盘点的项目集合（以编码和仓位为唯一标识）
+                        const inventoriedItems = new Set();
+                        currentInventory.items.forEach(item => {
+                            inventoriedItems.add(`${item.code}-${item.location}`);
+                        });
+                        
+                        // 检查未盘点的项目
+                        currentFile.data.forEach(fileItem => {
+                            const itemKey = `${fileItem.code}-${fileItem.location}`;
+                            if (!inventoriedItems.has(itemKey)) {
+                                // 未盘点项目，添加到盘点数据中
+                                const systemQuantity = fileItem.quantity || 0;
+                                const actualQuantity = 0;
+                                const difference = calculateDifference(actualQuantity, systemQuantity);
+                                
+                                currentInventory.items.push({
+                                    code: fileItem.code,
+                                    location: fileItem.location,
+                                    systemQuantity: systemQuantity,
+                                    actualQuantity: actualQuantity.toString(),
+                                    difference: difference,
+                                    timestamp: new Date().toLocaleString('zh-CN'),
+                                    status: 'uninventoried' // 标记为未盘点
+                                });
+                            }
+                        });
+                    }
+                }
+                
+                currentInventory.status = 'completed';
+                currentInventory.endTime = new Date().toLocaleString('zh-CN');
+                currentInventory.progress = 100;
+                currentInventory.totalItems = currentInventory.items.length;
+                
+                // 计算差异数量
+                currentInventory.differences = currentInventory.items.filter(item => item.difference !== 0).length;
+                
+                // 数据同步：将本次录入的信息推送到仓库盘点的主数据库
+                syncInventoryData(currentInventory);
+                
+                // 保存到已完成盘点列表
+                StorageManager.saveCompletedInventory(currentInventory);
+                
+                // 清空当前盘点
+                const updatedStorage = StorageManager.get('warehouseInventory');
+                updatedStorage.inventories.current = null;
+                StorageManager.set('warehouseInventory', updatedStorage);
+                
+                // 重置页面
+                document.getElementById('inventoryDataInfo').value = '';
+                document.getElementById('currentCode').value = '';
+                document.getElementById('currentLocation').value = '';
+                document.getElementById('actualQuantity').value = '';
+                
+                // 加载当前盘点数据
+                loadCurrentInventory();
+                
+                // 跳转到盘点历史页面，让用户看到同步的数据
+                window.location.href = 'inventory.html';
+            }
+
+            // 刷新当前盘点数据
+            document.getElementById('refreshCurrentInventoryBtn').addEventListener('click', function() {
+                loadCurrentInventory();
+            });
+
+            // 显示全部开关
+            document.getElementById('showAllToggle').addEventListener('change', function() {
+                showAllItems = this.checked;
+                loadCurrentInventory();
+            });
+
+            // 显示文件详情
+            function showFileDetails() {
+                const storage = StorageManager.get('warehouseInventory');
+                const currentInventory = storage ? storage.inventories.current : null;
+                const fileDetailsContent = document.getElementById('fileDetailsContent');
+                
+                if (!currentInventory || !currentInventory.fileId) {
+                    fileDetailsContent.innerHTML = `
+                        <div class="text-center text-gray-400 py-8">
+                            <i class="fa fa-file-o text-4xl mb-4"></i>
+                            <p>当前没有正在进行的文件盘点</p>
+                        </div>
+                    `;
+                    document.getElementById('fileDetailsModal').classList.remove('hidden');
+                    return;
+                }
+                
+                // 获取文件信息
+                const files = StorageManager.get('importHistory') || [];
+                const file = files.find(f => f.id === currentInventory.fileId);
+                
+                if (!file) {
+                    fileDetailsContent.innerHTML = `
+                        <div class="text-center text-gray-400 py-8">
+                            <i class="fa fa-file-o text-4xl mb-4"></i>
+                            <p>文件信息不存在</p>
+                        </div>
+                    `;
+                    document.getElementById('fileDetailsModal').classList.remove('hidden');
+                    return;
+                }
+                
+                // 计算统计信息
+                const totalItems = currentInventory.items ? currentInventory.items.length : 0;
+                const differences = currentInventory.items ? currentInventory.items.filter(item => item.difference !== 0).length : 0;
+                const accuracy = totalItems > 0 ? Math.round(((totalItems - differences) / totalItems) * 100) : 0;
+                
+                // 准备文件数据表格
+                let fileDataTable = '';
+                if (file.data && file.data.length > 0) {
+                    fileDataTable = `
+                        <div class="bg-gray-800 rounded-lg overflow-hidden">
+                            <h4 class="text-gray-400 text-sm p-4 border-b border-gray-700">文件数据</h4>
+                            <div class="overflow-x-auto max-h-60">
+                                <table class="w-full">
+                                    <thead class="sticky top-0 bg-gray-800">
+                                        <tr class="border-b border-gray-700">
+                                            <th class="py-2 px-3 text-left text-gray-400 text-sm">编码</th>
+                                            <th class="py-2 px-3 text-left text-gray-400 text-sm">仓位</th>
+                                            <th class="py-2 px-3 text-left text-gray-400 text-sm">数量</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${file.data.map(item => `
+                                            <tr class="border-b border-gray-700 hover:bg-gray-700">
+                                                <td class="py-2 px-3">${item.code || ''}</td>
+                                                <td class="py-2 px-3">${item.location || ''}</td>
+                                                <td class="py-2 px-3">${item.quantity || 0}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                fileDetailsContent.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gray-800 p-4 rounded-lg">
+                                <p class="text-gray-400 text-sm">文件名</p>
+                                <p class="font-medium">${file.fileName}</p>
+                            </div>
+                            <div class="bg-gray-800 p-4 rounded-lg">
+                                <p class="text-gray-400 text-sm">导入时间</p>
+                                <p class="font-medium">${formatTime(file.importTime)}</p>
+                            </div>
+                            <div class="bg-gray-800 p-4 rounded-lg">
+                                <p class="text-gray-400 text-sm">导入数量</p>
+                                <p class="font-medium">${file.count}</p>
+                            </div>
+                            <div class="bg-gray-800 p-4 rounded-lg">
+                                <p class="text-gray-400 text-sm">盘点状态</p>
+                                <p class="font-medium ${currentInventory.status === 'completed' ? 'text-green-400' : 'text-blue-400'}">
+                                    ${currentInventory.status === 'completed' ? '已完成' : '进行中'}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="bg-gray-800 p-4 rounded-lg text-center">
+                                <p class="text-gray-400 text-sm">总项数</p>
+                                <p class="text-xl font-bold">${totalItems}</p>
+                            </div>
+                            <div class="bg-gray-800 p-4 rounded-lg text-center">
+                                <p class="text-gray-400 text-sm">差异项</p>
+                                <p class="text-xl font-bold text-red-400">${differences}</p>
+                            </div>
+                            <div class="bg-gray-800 p-4 rounded-lg text-center">
+                                <p class="text-gray-400 text-sm">准确率</p>
+                                <p class="text-xl font-bold text-green-400">${accuracy}%</p>
+                            </div>
+                        </div>
+
+                        ${fileDataTable}
+                    </div>
+                `;
+                
+                document.getElementById('fileDetailsModal').classList.remove('hidden');
+            }
+
+            // 百度OCR API配置信息
+            const API_KEY = 'IWuZdXzexxFHbJwvidvfWcQT';
+            const SECRET_KEY = 'aQMPy9B5A1GiZEGIMNDexPqe3TMgFRGM';
+            const TOKEN_URL = 'https://aip.baidubce.com/oauth/2.0/token';
+            const OCR_URL = 'https://aip.baidubce.com/rest/2.0/ocr/v1/accurate_basic'; // 高精度接口
+
+            // 智能 OCR 识别功能
+            let cameraStream;
+            let currentOCRMode = 'specific'; // 默认模式：特定标签识别
+            let currentCamera = 'environment'; // environment: 后置摄像头, user: 前置摄像头
+            let flashMode = 'off'; // off: 关闭, on: 开启, auto: 自动
+            
+            function openOCR() {
+                document.getElementById('cameraModal').classList.remove('hidden');
+                
+                // 重置模式按钮状态
+                document.getElementById('modeSpecific').classList.remove('bg-gray-700');
+                document.getElementById('modeSpecific').classList.add('bg-primary');
+                document.getElementById('modeGeneral').classList.remove('bg-primary');
+                document.getElementById('modeGeneral').classList.add('bg-gray-700');
+                currentOCRMode = 'specific';
+                
+                startCamera();
+            }
+
+            // 关闭 OCR 识别
+            function closeOCR() {
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(track => track.stop());
+                    cameraStream = null;
+                }
+                document.getElementById('cameraModal').classList.add('hidden');
+            }
+
+            // 启动相机
+            async function startCamera() {
+                try {
+                    const constraints = {
+                        video: {
+                            facingMode: currentCamera
+                        }
+                    };
+                    cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    const video = document.getElementById('cameraVideo');
+                    video.srcObject = cameraStream;
+                    video.setAttribute('playsinline', true);
+                    video.play();
+                } catch (error) {
+                    console.error('Error accessing camera:', error);
+                    alert('请在系统设置中允许本应用使用相机');
+                    closeOCR();
+                }
+            }
+
+            // 切换摄像头
+            function toggleCamera() {
+                currentCamera = currentCamera === 'environment' ? 'user' : 'environment';
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(track => track.stop());
+                }
+                startCamera();
+            }
+
+            // 切换闪光灯
+            function toggleFlash() {
+                flashMode = flashMode === 'off' ? 'on' : 'off';
+                if (cameraStream) {
+                    const videoTrack = cameraStream.getVideoTracks()[0];
+                    if (videoTrack) {
+                        videoTrack.applyConstraints({
+                            advanced: [{ torch: flashMode === 'on' }]
+                        }).catch(error => {
+                            console.error('无法设置闪光灯:', error);
+                        });
+                    }
+                }
+            }
+
+            // 获取access_token
+            async function getAccessToken() {
+                const response = await fetch(`${TOKEN_URL}?grant_type=client_credentials&client_id=${API_KEY}&client_secret=${SECRET_KEY}`);
+                const data = await response.json();
+                return data.access_token;
+            }
+
+            // 执行 OCR 识别
+            async function performOCR() {
+                const video = document.getElementById('cameraVideo');
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // 显示识别中提示
+                document.getElementById('recognizingOverlay').classList.remove('hidden');
+                
+                try {
+                    // 转换为Base64
+                    const base64 = canvas.toDataURL('image/jpeg').split(',')[1];
+                    
+                    // 获取access_token
+                    const accessToken = await getAccessToken();
+
+                    // 调用OCR API
+                    const response = await fetch(`${OCR_URL}?access_token=${accessToken}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: `image=${encodeURIComponent(base64)}`
+                    });
+
+                    const data = await response.json();
+
+                    if (data.words_result) {
+                        // 处理识别结果
+                        let ocrResult = processOCRResult(data.words_result, currentOCRMode);
+                        
+                        // 填充识别结果到表单
+                        document.getElementById('currentCode').value = ocrResult.code || '';
+                        document.getElementById('currentLocation').value = ocrResult.location || '';
+                        document.getElementById('actualQuantity').value = ocrResult.quantity || '1';
+                        
+                        alert('识别成功，已自动填充编码与仓位');
+                    } else {
+                        alert('识别失败，请重新拍摄或上传清晰图片');
+                    }
+                } catch (error) {
+                    console.error('OCR 识别错误:', error);
+                    alert('网络异常，请检查网络连接后重试');
+                } finally {
+                    document.getElementById('recognizingOverlay').classList.add('hidden');
+                    closeOCR();
+                }
+            }
+            
+            // 处理 OCR 识别结果
+            function processOCRResult(wordsResult, mode) {
+                const result = {
+                    code: '',
+                    location: '',
+                    quantity: '1'
+                };
+                
+                // 分割文本为行
+                const lines = wordsResult.map(item => item.words.trim()).filter(line => line !== '');
+                
+                if (mode === 'specific') {
+                    // 模式一：特定标签识别
+                    // 提取第1行和第4行内容
+                    if (lines.length >= 4) {
+                        result.code = lines[0];
+                        result.location = lines[3];
+                    } else if (lines.length >= 1) {
+                        // 如果行数不足，至少取第一行作为编码
+                        result.code = lines[0];
+                    }
+                } else {
+                    // 模式二：通用 OE 号识别
+                    // 正则表达式匹配OE号
+                    const oePattern = /\d{5,}-\w{3,}-\w{3,}/g;
+                    let bestOE = null;
+                    
+                    lines.forEach(line => {
+                        const matches = line.match(oePattern);
+                        if (matches && matches.length > 0) {
+                            bestOE = matches[0];
+                        }
+                    });
+                    
+                    if (bestOE) {
+                        result.code = bestOE;
+                    } else if (lines.length > 0) {
+                        // 如果没有找到 OE 号，取第一行
+                        result.code = lines[0];
+                    }
+                }
+                
+                return result;
+            }
+
+            // 从相册选择图像
+            function handleAlbumSelect(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = async function(e) {
+                        // 显示识别中提示
+                        document.getElementById('recognizingOverlay').classList.remove('hidden');
+                        
+                        try {
+                            // 转换为Base64
+                            const base64 = e.target.result.split(',')[1];
+                            
+                            // 获取access_token
+                            const accessToken = await getAccessToken();
+
+                            // 调用OCR API
+                            const response = await fetch(`${OCR_URL}?access_token=${accessToken}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded'
+                                },
+                                body: `image=${encodeURIComponent(base64)}`
+                            });
+
+                            const data = await response.json();
+
+                            if (data.words_result) {
+                                // 处理识别结果
+                                let ocrResult = processOCRResult(data.words_result, currentOCRMode);
+                                
+                                // 填充识别结果到表单
+                                document.getElementById('currentCode').value = ocrResult.code || '';
+                                document.getElementById('currentLocation').value = ocrResult.location || '';
+                                document.getElementById('actualQuantity').value = ocrResult.quantity || '1';
+                                
+                                alert('识别成功，已自动填充编码与仓位');
+                            } else {
+                                alert('识别失败，请重新拍摄或上传清晰图片');
+                            }
+                        } catch (error) {
+                            console.error('OCR 识别错误:', error);
+                            alert('网络异常，请检查网络连接后重试');
+                        } finally {
+                            document.getElementById('recognizingOverlay').classList.add('hidden');
+                            closeOCR();
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+
+            // 模式切换
+            document.getElementById('modeSpecific').addEventListener('click', function() {
+                currentOCRMode = 'specific';
+                this.classList.remove('bg-gray-700');
+                this.classList.add('bg-primary');
+                document.getElementById('modeGeneral').classList.remove('bg-primary');
+                document.getElementById('modeGeneral').classList.add('bg-gray-700');
+            });
+
+            document.getElementById('modeGeneral').addEventListener('click', function() {
+                currentOCRMode = 'general';
+                this.classList.remove('bg-gray-700');
+                this.classList.add('bg-primary');
+                document.getElementById('modeSpecific').classList.remove('bg-primary');
+                document.getElementById('modeSpecific').classList.add('bg-gray-700');
+            });
+
+            // 相机相关事件监听器
+            document.getElementById('closeCameraModal').addEventListener('click', closeOCR);
+            document.getElementById('captureBtn').addEventListener('click', performOCR);
+            document.getElementById('cameraToggle').addEventListener('click', toggleCamera);
+            document.getElementById('flashToggle').addEventListener('click', toggleFlash);
+            document.getElementById('albumBtn').addEventListener('click', function() {
+                document.getElementById('albumInput').click();
+            });
+            document.getElementById('albumInput').addEventListener('change', handleAlbumSelect);
+
+            // 更新相机按钮事件监听器
+            document.getElementById('cameraBtn').addEventListener('click', openOCR);
+            
+            // 数量加减按钮功能
+            const actualQuantityInput = document.getElementById('actualQuantity');
+            const increaseQuantityBtn = document.getElementById('increaseQuantity');
+            const decreaseQuantityBtn = document.getElementById('decreaseQuantity');
+            
+            increaseQuantityBtn.addEventListener('click', function() {
+                const currentValue = parseInt(actualQuantityInput.value) || 0;
+                actualQuantityInput.value = currentValue + 1;
+            });
+            
+            decreaseQuantityBtn.addEventListener('click', function() {
+                const currentValue = parseInt(actualQuantityInput.value) || 0;
+                actualQuantityInput.value = currentValue - 1;
+            });
+
+            // 编码自动补全功能
+            const currentCodeInput = document.getElementById('currentCode');
+            const codeSuggestions = document.getElementById('codeSuggestions');
+            
+            // 仓位自动补全功能
+            const currentLocationInput = document.getElementById('currentLocation');
+            const locationSuggestions = document.getElementById('locationSuggestions');
+            
+            // 获取当前导入文件的编码
+            function getAllCodes() {
+                const storage = StorageManager.get('warehouseInventory');
+                const currentInventory = storage ? storage.inventories.current : null;
+                
+                // 如果没有当前盘点或没有文件ID，返回空数组
+                if (!currentInventory || !currentInventory.fileId) {
+                    return [];
+                }
+                
+                // 只获取当前导入文件的编码
+                const importHistory = StorageManager.get('importHistory') || [];
+                const currentFile = importHistory.find(file => file.id === currentInventory.fileId);
+                
+                if (!currentFile || !currentFile.data) {
+                    return [];
+                }
+                
+                const codes = new Set();
+                currentFile.data.forEach(item => {
+                    if (item.code) {
+                        codes.add(item.code);
+                    }
+                });
+                
+                return Array.from(codes);
+            }
+            
+            // 获取当前导入文件的仓位
+            function getAllLocations() {
+                const storage = StorageManager.get('warehouseInventory');
+                const currentInventory = storage ? storage.inventories.current : null;
+                
+                // 如果没有当前盘点或没有文件ID，返回空数组
+                if (!currentInventory || !currentInventory.fileId) {
+                    return [];
+                }
+                
+                // 只获取当前导入文件的仓位
+                const importHistory = StorageManager.get('importHistory') || [];
+                const currentFile = importHistory.find(file => file.id === currentInventory.fileId);
+                
+                if (!currentFile || !currentFile.data) {
+                    return [];
+                }
+                
+                const locations = new Set();
+                currentFile.data.forEach(item => {
+                    if (item.location) {
+                        locations.add(item.location);
+                    }
+                });
+                
+                return Array.from(locations);
+            }
+            
+            // 显示编码建议
+            function showCodeSuggestions(inputValue) {
+                if (!inputValue.trim()) {
+                    codeSuggestions.classList.add('hidden');
+                    return;
+                }
+                
+                const allCodes = getAllCodes();
+                const filteredCodes = allCodes.filter(code => 
+                    code.toLowerCase().includes(inputValue.toLowerCase())
+                );
+                
+                if (filteredCodes.length === 0) {
+                    codeSuggestions.classList.add('hidden');
+                    return;
+                }
+                
+                // 生成建议列表
+                codeSuggestions.innerHTML = '';
+                filteredCodes.forEach(code => {
+                    const suggestionItem = document.createElement('div');
+                    suggestionItem.className = 'px-4 py-2 hover:bg-gray-700 cursor-pointer';
+                    suggestionItem.textContent = code;
+                    suggestionItem.addEventListener('click', function() {
+                        currentCodeInput.value = code;
+                        codeSuggestions.classList.add('hidden');
+                    });
+                    codeSuggestions.appendChild(suggestionItem);
+                });
+                
+                codeSuggestions.classList.remove('hidden');
+            }
+            
+            // 显示仓位建议
+            function showLocationSuggestions(inputValue) {
+                if (!inputValue.trim()) {
+                    locationSuggestions.classList.add('hidden');
+                    return;
+                }
+                
+                const allLocations = getAllLocations();
+                const filteredLocations = allLocations.filter(location => 
+                    location.toLowerCase().includes(inputValue.toLowerCase())
+                );
+                
+                if (filteredLocations.length === 0) {
+                    locationSuggestions.classList.add('hidden');
+                    return;
+                }
+                
+                // 生成建议列表
+                locationSuggestions.innerHTML = '';
+                filteredLocations.forEach(location => {
+                    const suggestionItem = document.createElement('div');
+                    suggestionItem.className = 'px-4 py-2 hover:bg-gray-700 cursor-pointer';
+                    suggestionItem.textContent = location;
+                    suggestionItem.addEventListener('click', function() {
+                        currentLocationInput.value = location;
+                        locationSuggestions.classList.add('hidden');
+                    });
+                    locationSuggestions.appendChild(suggestionItem);
+                });
+                
+                locationSuggestions.classList.remove('hidden');
+            }
+            
+            // 监听编码输入
+            currentCodeInput.addEventListener('input', function() {
+                showCodeSuggestions(this.value);
+            });
+            
+            // 监听仓位输入
+            currentLocationInput.addEventListener('input', function() {
+                showLocationSuggestions(this.value);
+            });
+            
+            // 点击其他地方关闭建议列表
+            document.addEventListener('click', function(e) {
+                if (!currentCodeInput.contains(e.target) && !codeSuggestions.contains(e.target)) {
+                    codeSuggestions.classList.add('hidden');
+                }
+                if (!currentLocationInput.contains(e.target) && !locationSuggestions.contains(e.target)) {
+                    locationSuggestions.classList.add('hidden');
+                }
+            });
+            
+            // 加载当前盘点数据
+            loadCurrentInventory();
+        });
+        
+        // 加载文件盘点数据
+        function loadFileInventory(fileId) {
+            const files = StorageManager.get('importHistory') || [];
+            const file = files.find(f => f.id === fileId);
+            
+            if (!file) return;
+            
+            // 创建基于文件的盘点数据
+            const inventoryData = {
+                id: 'INV-' + Date.now().toString().slice(-6),
+                code: '',
+                name: file.fileName,
+                location: '文件导入',
+                scope: 'file',
+                fileId: fileId,
+                startTime: new Date().toLocaleString('zh-CN'),
+                status: 'in_progress',
+                progress: 0,
+                items: []
+            };
+            
+            // 保存到当前盘点
+            StorageManager.saveCurrentInventory(inventoryData);
+            
+            // 显示文件信息
+            document.getElementById('inventoryDataInfo').value = `${formatTime(file.importTime)} ${file.fileName} 导入数量 ${file.count}`;
+            // 加载当前盘点数据
+            loadCurrentInventory();
+        }
+        
+        // 根据编码获取物品信息
+        function getItemByCode(code) {
+            const storage = StorageManager.get('warehouseInventory');
+            const currentInventory = storage ? storage.inventories.current : null;
+            
+            // 如果没有当前盘点或没有文件ID，返回null
+            if (!currentInventory || !currentInventory.fileId) {
+                return null;
+            }
+            
+            // 只从当前导入文件中查找物品信息
+            const importHistory = StorageManager.get('importHistory') || [];
+            const currentFile = importHistory.find(file => file.id === currentInventory.fileId);
+            
+            if (!currentFile || !currentFile.data) {
+                return null;
+            }
+            
+            // 在当前文件中查找编码匹配的物品
+            const item = currentFile.data.find(item => item.code === code);
+            if (item) {
+                return item;
+            }
+            
+            // 未找到返回null
+            return null;
+        }
+        
+        // 获取系统库存数量（只从当前导入文件中获取）
+        function getSystemQuantity(location, code) {
+            const storage = StorageManager.get('warehouseInventory');
+            const currentInventory = storage ? storage.inventories.current : null;
+            
+            // 如果没有当前盘点或没有文件ID，返回0
+            if (!currentInventory || !currentInventory.fileId) {
+                return 0;
+            }
+            
+            // 只从当前导入文件中查找系统库存数据
+            const importHistory = StorageManager.get('importHistory') || [];
+            const currentFile = importHistory.find(file => file.id === currentInventory.fileId);
+            
+            if (!currentFile || !currentFile.data) {
+                return 0;
+            }
+            
+            // 在当前文件中查找编码和仓位匹配的物品
+            const item = currentFile.data.find(item => item.code === code && item.location === location);
+            if (item) {
+                return item.quantity || 0;
+            }
+            
+            // 未找到返回0
+            return 0;
+        }
+        
+        // 计算差异
+        function calculateDifference(actualQuantity, systemQuantity) {
+            return parseInt(actualQuantity) - parseInt(systemQuantity);
+        }
+        
+        // 数据同步：将本次录入的信息推送到仓库盘点的主数据库
+        function syncInventoryData(inventoryData) {
+            // 获取主数据库
+            const storage = StorageManager.get('warehouseInventory') || {
+                version: '1.0',
+                lastUpdated: new Date().toISOString(),
+                inventories: {
+                    current: null
+                },
+                statistics: {
+                    totalItems: 0,
+                    totalDifferences: 0,
+                    accuracy: 0
+                }
+            };
+            
+            // 确保统计信息存在
+            if (!storage.statistics) {
+                storage.statistics = {
+                    totalItems: 0,
+                    totalDifferences: 0,
+                    accuracy: 0
+                };
+            }
+            
+            // 更新统计信息
+            storage.statistics.totalItems += inventoryData.totalItems || 0;
+            
+            // 计算差异数量
+            const differenceCount = inventoryData.items.filter(item => item.difference !== 0).length;
+            storage.statistics.totalDifferences += differenceCount;
+            
+            // 计算准确率
+            const totalItems = storage.statistics.totalItems;
+            if (totalItems > 0) {
+                const accurateItems = totalItems - storage.statistics.totalDifferences;
+                storage.statistics.accuracy = Math.round((accurateItems / totalItems) * 100);
+            }
+            
+            // 更新最后更新时间
+            storage.lastUpdated = new Date().toISOString();
+            
+            // 保存到存储
+            StorageManager.set('warehouseInventory', storage);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>百度OCR通用文字识别</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#10b981',
+                        danger: '#ef4444',
+                        dark: '#1e293b',
+                        'dark-bg': '#0f172a',
+                        'dark-card': '#1e293b',
+                    },
+                },
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card {
+                @apply bg-dark-card rounded-lg shadow-md p-6 transition-all duration-300 hover:shadow-lg hover:translate-y-[-2px];
+            }
+            .btn {
+                @apply px-4 py-3 rounded-md font-medium transition-all duration-300 transform hover:scale-105 active:scale-95;
+            }
+            .btn-primary {
+                @apply bg-primary text-white hover:bg-primary/90;
+            }
+            .btn-secondary {
+                @apply bg-secondary text-white hover:bg-secondary/90;
+            }
+            .btn-danger {
+                @apply bg-danger text-white hover:bg-danger/90;
+            }
+            .input {
+                @apply w-full px-4 py-3 bg-dark border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-white transition-all duration-300;
+            }
+            .fade-in {
+                animation: fadeIn 0.5s ease-in-out;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+        }
+    </style>
+</head>
+<body class="bg-dark-bg min-h-screen text-white">
+    <!-- 顶部导航 -->
+    <header class="bg-dark sticky top-0 z-10 shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center">
+                <button id="backBtn" class="mr-4 text-gray-400 hover:text-white">
+                    <i class="fa fa-arrow-left text-xl"></i>
+                </button>
+                <h1 class="text-xl font-bold">YICHENGQIPEI</h1>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="container mx-auto px-4 py-6 pb-24">
+        <!-- 页面标题 -->
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold">百度OCR通用文字识别</h1>
+        </div>
+
+        <!-- 识别卡片 -->
+        <div class="card mb-8 fade-in">
+            <div class="space-y-6">
+                <!-- 模式切换 -->
+                <div>
+                    <label class="block text-gray-400 mb-2">识别模式</label>
+                    <div class="flex space-x-4">
+                        <button id="modeFixed" class="btn btn-primary flex-1">固定格式标签识别</button>
+                        <button id="modeGeneral" class="btn bg-gray-700 text-white hover:bg-gray-600 flex-1">通用OE号识别</button>
+                    </div>
+                </div>
+
+                <!-- 图片上传 -->
+                <div>
+                    <label class="block text-gray-400 mb-2">上传图片</label>
+                    <div class="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center hover:border-primary transition-colors duration-300">
+                        <input type="file" id="imageInput" accept="image/*" class="hidden">
+                        <input type="file" id="cameraInput" accept="image/*" capture="camera" class="hidden">
+                        <div class="flex flex-col items-center">
+                            <label for="imageInput" class="cursor-pointer">
+                                <i class="fa fa-cloud-upload text-4xl text-gray-500 mb-4"></i>
+                                <p class="text-gray-400">点击或拖拽图片到此处上传</p>
+                            </label>
+                            <button id="cameraBtn" class="btn btn-secondary mt-4 w-32">
+                                <i class="fa fa-camera mr-2"></i>拍照
+                            </button>
+                        </div>
+                        <div id="imagePreview" class="mt-4 hidden">
+                            <img id="previewImage" src="" alt="预览图片" class="max-h-64 mx-auto rounded">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 识别按钮 -->
+                <button id="recognizeBtn" class="btn btn-primary w-full">
+                    <i class="fa fa-eye mr-2"></i>识别
+                </button>
+
+                <!-- 识别结果 -->
+                <div id="resultContainer" class="hidden">
+                    <h3 class="text-lg font-semibold mb-3">识别结果</h3>
+                    <div class="bg-gray-800 p-4 rounded-lg min-h-40">
+                        <pre id="recognitionResult" class="whitespace-pre-wrap text-sm"></pre>
+                    </div>
+                </div>
+
+                <!-- 编码和仓位输入框 -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-gray-400 mb-2">编码</label>
+                        <input type="text" id="codeInput" class="input" placeholder="识别到的编码将自动填充到这里">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-2">仓位</label>
+                        <input type="text" id="locationInput" class="input" placeholder="识别到的仓位将自动填充到这里">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // API配置信息
+        const API_KEY = 'IWuZdXzexxFHbJwvidvfWcQT';
+        const SECRET_KEY = 'aQMPy9B5A1GiZEGIMNDexPqe3TMgFRGM';
+        const TOKEN_URL = 'https://aip.baidubce.com/oauth/2.0/token';
+        const OCR_URL = 'https://aip.baidubce.com/rest/2.0/ocr/v1/accurate_basic'; // 高精度接口
+
+        // 全局变量
+        let currentMode = 'fixed'; // fixed: 固定格式标签识别, general: 通用OE号识别
+
+        // DOM元素
+        const imageInput = document.getElementById('imageInput');
+        const cameraInput = document.getElementById('cameraInput');
+        const cameraBtn = document.getElementById('cameraBtn');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImage = document.getElementById('previewImage');
+        const recognizeBtn = document.getElementById('recognizeBtn');
+        const resultContainer = document.getElementById('resultContainer');
+        const recognitionResult = document.getElementById('recognitionResult');
+        const backBtn = document.getElementById('backBtn');
+        const modeFixed = document.getElementById('modeFixed');
+        const modeGeneral = document.getElementById('modeGeneral');
+        const codeInput = document.getElementById('codeInput');
+        const locationInput = document.getElementById('locationInput');
+
+        // 图片预览
+        function handleImageInput(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    imagePreview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        imageInput.addEventListener('change', handleImageInput);
+        cameraInput.addEventListener('change', handleImageInput);
+
+        // 拍照按钮
+        cameraBtn.addEventListener('click', function() {
+            cameraInput.click();
+        });
+
+        // 模式切换
+        modeFixed.addEventListener('click', function() {
+            currentMode = 'fixed';
+            modeFixed.classList.remove('bg-gray-700');
+            modeFixed.classList.add('btn-primary');
+            modeGeneral.classList.remove('btn-primary');
+            modeGeneral.classList.add('bg-gray-700', 'text-white', 'hover:bg-gray-600');
+        });
+
+        modeGeneral.addEventListener('click', function() {
+            currentMode = 'general';
+            modeGeneral.classList.remove('bg-gray-700', 'text-white', 'hover:bg-gray-600');
+            modeGeneral.classList.add('btn-primary');
+            modeFixed.classList.remove('btn-primary');
+            modeFixed.classList.add('bg-gray-700', 'text-white', 'hover:bg-gray-600');
+        });
+
+        // 获取access_token
+        async function getAccessToken() {
+            const response = await fetch(`${TOKEN_URL}?grant_type=client_credentials&client_id=${API_KEY}&client_secret=${SECRET_KEY}`);
+            const data = await response.json();
+            return data.access_token;
+        }
+
+        // 识别文字
+        recognizeBtn.addEventListener('click', async function() {
+            const file = imageInput.files[0] || cameraInput.files[0];
+            if (!file) {
+                alert('请先上传图片或拍照');
+                return;
+            }
+
+            // 显示加载状态
+            recognizeBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>识别中...';
+            recognizeBtn.disabled = true;
+
+            try {
+                // 转换为Base64
+                const base64 = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        // 移除data:image/xxx;base64,前缀
+                        const base64String = e.target.result.split(',')[1];
+                        resolve(base64String);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+
+                // 获取access_token
+                const accessToken = await getAccessToken();
+
+                // 调用OCR API
+                const response = await fetch(`${OCR_URL}?access_token=${accessToken}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `image=${encodeURIComponent(base64)}`
+                });
+
+                const data = await response.json();
+
+                // 显示结果
+                if (data.words_result) {
+                    let resultText = '';
+                    data.words_result.forEach(item => {
+                        resultText += item.words + '\n';
+                    });
+                    recognitionResult.textContent = resultText;
+                    resultContainer.classList.remove('hidden');
+
+                    // 根据当前模式处理识别结果
+                    if (currentMode === 'fixed') {
+                        handleFixedFormatRecognition(data.words_result);
+                    } else {
+                        handleGeneralOERecognition(data.words_result);
+                    }
+                } else {
+                    recognitionResult.textContent = '识别失败: ' + (data.error_msg || '未知错误');
+                    resultContainer.classList.remove('hidden');
+                    alert('识别失败，请重新拍摄或上传清晰图片');
+                }
+            } catch (error) {
+                console.error('识别错误:', error);
+                recognitionResult.textContent = '识别失败: ' + error.message;
+                resultContainer.classList.remove('hidden');
+                alert('识别失败，请检查网络连接后重试');
+            } finally {
+                // 恢复按钮状态
+                recognizeBtn.innerHTML = '<i class="fa fa-eye mr-2"></i>识别';
+                recognizeBtn.disabled = false;
+            }
+        });
+
+        // 处理固定格式标签识别
+        function handleFixedFormatRecognition(wordsResult) {
+            if (wordsResult.length >= 4) {
+                // 提取第1行和第4行内容
+                const code = wordsResult[0].words.trim();
+                const location = wordsResult[3].words.trim();
+
+                // 自动填充
+                codeInput.value = code;
+                locationInput.value = location;
+
+                alert('识别成功，已自动填充编码与仓位');
+            } else {
+                alert('识别失败，请重新拍摄或上传清晰图片');
+            }
+        }
+
+        // 处理通用OE号识别
+        function handleGeneralOERecognition(wordsResult) {
+            // 正则表达式匹配OE号
+            const oePattern = /\d{5,}-\w{3,}-\w{3,}/g;
+            let bestOE = null;
+            let highestConfidence = 0;
+
+            wordsResult.forEach(item => {
+                const matches = item.words.match(oePattern);
+                if (matches) {
+                    // 简单起见，取第一个匹配的OE号
+                    const oe = matches[0];
+                    // 假设words_result包含置信度信息（实际百度OCR API返回的格式可能不同）
+                    const confidence = item.probability ? item.probability.confidence : 1;
+                    if (confidence > highestConfidence) {
+                        bestOE = oe;
+                        highestConfidence = confidence;
+                    }
+                }
+            });
+
+            if (bestOE) {
+                // 自动填充
+                codeInput.value = bestOE;
+                // 通用模式下仓位不自动填充
+                locationInput.value = '';
+
+                alert('识别成功，已自动填充编码并触发搜索');
+                // 这里可以添加触发搜索自动补全的逻辑
+            } else {
+                alert('未识别到有效OE号，请重新拍摄或上传清晰图片');
+            }
+        }
+
+        // 返回按钮
+        backBtn.addEventListener('click', function() {
+            window.location.href = 'start-inventory.html';
+        });
+    </script>
+</body>
+</html>
