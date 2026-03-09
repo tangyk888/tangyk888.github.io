@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仓库仓位查询系统 - 盘点文件管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#10b981',
+                        danger: '#ef4444',
+                        dark: '#1e293b',
+                        'dark-bg': '#0f172a',
+                        'dark-card': '#1e293b',
+                    },
+                },
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card {
+                @apply bg-dark-card rounded-lg shadow-md p-6 transition-all duration-300 hover:shadow-lg hover:translate-y-[-2px];
+            }
+            .btn {
+                @apply px-4 py-3 rounded-md font-medium transition-all duration-300 transform hover:scale-105 active:scale-95;
+            }
+            .btn-primary {
+                @apply bg-primary text-white hover:bg-primary/90;
+            }
+            .btn-secondary {
+                @apply bg-secondary text-white hover:bg-secondary/90;
+            }
+            .btn-danger {
+                @apply bg-danger text-white hover:bg-danger/90;
+            }
+            .input {
+                @apply w-full px-4 py-3 bg-dark border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-white transition-all duration-300;
+            }
+            .fade-in {
+                animation: fadeIn 0.5s ease-in-out;
+            }
+            .slide-in {
+                animation: slideIn 0.3s ease-out;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes slideIn {
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+        }
+    </style>
+</head>
+<body class="bg-dark-bg min-h-screen text-white">
+    <!-- 顶部导航 -->
+    <header class="bg-dark sticky top-0 z-10 shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center">
+                <button id="backBtn" class="mr-4 text-gray-400 hover:text-white">
+                    <i class="fa fa-arrow-left text-xl"></i>
+                </button>
+                <h1 class="text-xl font-bold">YICHENGQIPEI</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-400">欢迎, <span class="text-white">admin</span></span>
+                <div class="relative">
+                    <button id="menuBtn" class="text-gray-400 hover:text-white">
+                        <i class="fa fa-ellipsis-v text-xl"></i>
+                    </button>
+                    <!-- 弹出菜单 -->
+                    <div id="menu" class="absolute right-0 mt-2 w-48 bg-dark-card rounded-md shadow-lg py-2 hidden">
+                        <a href="index.html" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white">返回主页</a>
+                        <a href="user-management.html" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white">用户管理</a>
+                        <a href="settings.html" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white">系统设置</a>
+                        <a href="login.html" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white">登出</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="container mx-auto px-4 py-6 pb-24">
+        <!-- 页面标题 -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold mb-2">盘点文件管理</h1>
+            <div class="w-24 h-1 bg-primary mx-auto mt-4"></div>
+        </div>
+
+
+
+        <!-- 盘点文件列表卡片 -->
+        <div class="card slide-in" style="animation-delay: 0.2s;">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <i class="fa fa-file-excel-o text-primary mr-2"></i>
+                    <h2 class="text-lg font-semibold">盘点数据文件</h2>
+                </div>
+                <button id="refreshBtn" class="btn bg-gray-700 text-white hover:bg-gray-600">
+                    <i class="fa fa-refresh"></i>
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-gray-700">
+                            <th class="py-3 px-4 text-left text-gray-400">导入时间</th>
+                            <th class="py-3 px-4 text-left text-gray-400">文件名</th>
+                            <th class="py-3 px-4 text-left text-gray-400">导入数量</th>
+                            <th class="py-3 px-4 text-right text-gray-400">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fileListTableBody">
+                        <!-- 文件列表将通过JavaScript动态生成 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- 底部导航栏 -->
+    <footer class="bg-dark fixed bottom-0 left-0 right-0 border-t border-gray-800 z-10">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex space-x-4">
+                <button id="navStartInventoryBtn" class="btn btn-primary flex-1">
+                    <i class="fa fa-play-circle mr-2"></i>开始盘点
+                </button>
+                <button id="navBatchImportBtn" class="btn btn-secondary flex-1">
+                    <i class="fa fa-upload mr-2"></i>数据导入
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 盘点详情模态框 -->
+    <div id="inventoryDetailModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">文件盘点详情</h3>
+                <button id="closeDetailModal" class="text-gray-400 hover:text-white">
+                    <i class="fa fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div id="detailContent" class="space-y-4">
+                <!-- 详情内容将通过JavaScript动态生成 -->
+            </div>
+            <div class="mt-6 flex justify-end space-x-4">
+                <button id="cancelInventoryBtn" class="btn bg-gray-700 text-white hover:bg-gray-600">取消</button>
+                <button id="startFileInventoryBtn" class="btn btn-primary">开始盘点</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 检查登录状态和登录时间
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        const loginTime = localStorage.getItem('loginTime');
+        const eightHoursInMs = 8 * 60 * 60 * 1000;
+        const currentTime = new Date().getTime();
+        
+        if (!currentUser || !loginTime || (currentTime - loginTime) > eightHoursInMs) {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('loginTime');
+            window.location.href = 'login.html';
+        }
+        
+        // 每60秒检查一次登录时间
+        setInterval(function() {
+            const currentTime = new Date().getTime();
+            const loginTime = localStorage.getItem('loginTime');
+            if (loginTime && (currentTime - loginTime) > eightHoursInMs) {
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('loginTime');
+                window.location.href = 'login.html';
+            }
+        }, 60000);
+
+        // 格式化时间函数
+        function formatTime(dateString) {
+            const date = new Date(dateString);
+            const year = date.getFullYear().toString().slice(-2); // 获取年份的后两位
+            const month = date.getMonth() + 1; // 月份从0开始，需要加1
+            const day = date.getDate();
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            return `${year}/${month}/${day} ${hours}:${minutes}`;
+        }
+
+        // 数据存储管理
+        const StorageManager = {
+            get: function(key) {
+                try {
+                    const data = localStorage.getItem(key);
+                    return data ? JSON.parse(data) : null;
+                } catch (error) {
+                    console.error('Error getting data from localStorage:', error);
+                    return null;
+                }
+            },
+            
+            set: function(key, value) {
+                try {
+                    localStorage.setItem(key, JSON.stringify(value));
+                    return true;
+                } catch (error) {
+                    console.error('Error setting data to localStorage:', error);
+                    return false;
+                }
+            }
+        };
+
+        // 加载盘点文件列表
+        function loadFileList() {
+            const tableBody = document.getElementById('fileListTableBody');
+            tableBody.innerHTML = '';
+            
+            // 使用导入历史数据作为盘点文件
+            const importHistory = StorageManager.get('importHistory') || [];
+            
+            if (importHistory.length === 0) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = `<td colspan="4" class="py-8 text-center text-gray-400">暂无盘点文件</td>`;
+                tableBody.appendChild(emptyRow);
+                return;
+            }
+            
+            importHistory.forEach(file => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-700 hover:bg-gray-800';
+                row.innerHTML = `
+                    <td class="py-3 px-4">${formatTime(file.importTime)}</td>
+                    <td class="py-3 px-4">${file.fileName}</td>
+                    <td class="py-3 px-4">${file.count}</td>
+                    <td class="py-3 px-4 text-right">
+                        <div class="flex justify-end space-x-2">
+                            <button class="btn btn-primary view-file-btn w-10 h-10 flex flex-col items-center justify-center p-0 text-xs" data-id="${file.id}" title="查看详情">
+                                <div class="flex justify-between w-8">
+                                    <span>查</span>
+                                    <span>看</span>
+                                </div>
+                                <div class="flex justify-between w-8">
+                                    <span>详</span>
+                                    <span>情</span>
+                                </div>
+                            </button>
+                            <button class="btn btn-secondary start-inventory-btn w-10 h-10 flex flex-col items-center justify-center p-0 text-xs" data-id="${file.id}" title="开始盘点">
+                                <div class="flex justify-between w-8">
+                                    <span>开</span>
+                                    <span>始</span>
+                                </div>
+                                <div class="flex justify-between w-8">
+                                    <span>盘</span>
+                                    <span>点</span>
+                                </div>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // 为查看详情按钮添加事件监听器
+            document.querySelectorAll('.view-file-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const fileId = this.getAttribute('data-id');
+                    viewFileDetail(fileId);
+                });
+            });
+            
+            // 为开始盘点按钮添加事件监听器
+            document.querySelectorAll('.start-inventory-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const fileId = this.getAttribute('data-id');
+                    // 跳转到开始盘点页面，并传递文件ID
+                    window.location.href = `start-inventory.html?fileId=${fileId}`;
+                });
+            });
+        }
+
+        // 查看文件详情
+        function viewFileDetail(fileId) {
+            const files = StorageManager.get('importHistory') || [];
+            const file = files.find(f => f.id === fileId);
+            
+            if (!file) return;
+            
+            const detailContent = document.getElementById('detailContent');
+            detailContent.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h4 class="text-md font-semibold mb-2">文件信息</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">文件名</span>
+                                <span>${file.fileName}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">导入时间</span>
+                                <span>${formatTime(file.importTime)}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">导入数量</span>
+                                <span>${file.count}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <h4 class="text-md font-semibold mb-3">文件数据</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="py-2 px-3 text-left text-gray-400 text-sm">编码</th>
+                                    <th class="py-2 px-3 text-left text-gray-400 text-sm">仓位</th>
+                                    <th class="py-2 px-3 text-left text-gray-400 text-sm">数量</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${file.data.map(item => `
+                                    <tr class="border-b border-gray-700 hover:bg-gray-800">
+                                        <td class="py-2 px-3 text-sm">${item.code}</td>
+                                        <td class="py-2 px-3 text-sm">${item.location}</td>
+                                        <td class="py-2 px-3 text-sm">${item.quantity}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            // 存储当前选中的文件ID
+            localStorage.setItem('currentInventoryFileId', fileId);
+            
+            // 显示模态框
+            document.getElementById('inventoryDetailModal').classList.remove('hidden');
+        }
+
+
+
+        // 初始化加载
+        document.addEventListener('DOMContentLoaded', function() {
+            // 加载文件列表
+            loadFileList();
+            
+            // 菜单控制
+            document.getElementById('menuBtn').addEventListener('click', function() {
+                const menu = document.getElementById('menu');
+                menu.classList.toggle('hidden');
+            });
+
+            // 点击其他地方关闭菜单
+            document.addEventListener('click', function(e) {
+                const menu = document.getElementById('menu');
+                const menuBtn = document.getElementById('menuBtn');
+                if (!menu.contains(e.target) && !menuBtn.contains(e.target)) {
+                    menu.classList.add('hidden');
+                }
+            });
+
+            // 返回按钮
+            document.getElementById('backBtn').addEventListener('click', function() {
+                window.location.href = 'start-inventory.html';
+            });
+
+            // 刷新按钮
+            document.getElementById('refreshBtn').addEventListener('click', function() {
+                loadFileList();
+            });
+
+            // 关闭详情模态框
+            document.getElementById('closeDetailModal').addEventListener('click', function() {
+                document.getElementById('inventoryDetailModal').classList.add('hidden');
+            });
+
+            // 取消盘点按钮
+            document.getElementById('cancelInventoryBtn').addEventListener('click', function() {
+                document.getElementById('inventoryDetailModal').classList.add('hidden');
+            });
+
+            // 开始盘点按钮
+            document.getElementById('startFileInventoryBtn').addEventListener('click', function() {
+                const fileId = localStorage.getItem('currentInventoryFileId');
+                if (fileId) {
+                    // 跳转到开始盘点页面，并传递文件ID
+                    window.location.href = `start-inventory.html?fileId=${fileId}`;
+                }
+            });
+
+            // 底部导航栏开始盘点按钮
+            document.getElementById('navStartInventoryBtn').addEventListener('click', function() {
+                window.location.href = 'start-inventory.html';
+            });
+
+            // 底部导航栏数据导入按钮
+            document.getElementById('navBatchImportBtn').addEventListener('click', function() {
+                window.location.href = 'batch-import.html';
+            });
+        });
+    </script>
+</body>
+</html>

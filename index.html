@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仓库仓位查询系统 - 查询</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#10b981',
+                        danger: '#ef4444',
+                        dark: '#1e293b',
+                        'dark-bg': '#0f172a',
+                        'dark-card': '#1e293b',
+                    },
+                },
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card {
+                @apply bg-dark-card rounded-lg shadow-md p-6;
+            }
+            .btn {
+                @apply px-4 py-3 rounded-md font-medium transition-all;
+            }
+            .btn-primary {
+                @apply bg-primary text-white hover:bg-primary/90;
+            }
+            .btn-secondary {
+                @apply bg-secondary text-white hover:bg-secondary/90;
+            }
+            .input {
+                @apply w-full px-4 py-3 bg-dark border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-white;
+            }
+        }
+    </style>
+</head>
+<body class="bg-dark-bg min-h-screen text-white">
+    <!-- 顶部导航 -->
+    <header class="bg-dark sticky top-0 z-10 shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center">
+                <h1 class="text-xl font-bold">YICHENGQIPEI</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-400">欢迎, <span class="text-white">admin</span></span>
+                <div class="relative">
+                    <button id="menuBtn" class="text-gray-400 hover:text-white">
+                        <i class="fa fa-ellipsis-v text-xl"></i>
+                    </button>
+                    <!-- 弹出菜单 -->
+                    <div id="menu" class="absolute right-0 mt-2 w-48 bg-dark-card rounded-md shadow-lg py-2 hidden">
+                        <a href="user-management.html" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white">用户管理</a>
+                        <a href="settings.html" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white">系统设置</a>
+                        <a href="login.html" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white">登出</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="container mx-auto px-4 py-6 pb-24">
+        <!-- 页面标题 -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold mb-2">仓位查询</h1>
+        </div>
+
+        <!-- 查询表单 -->
+        <div class="card mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center">
+                    <i class="fa fa-search text-primary mr-2"></i>
+                    <h2 class="text-lg font-semibold">查询条件</h2>
+                </div>
+                <button type="button" id="scanBtn" class="btn btn-primary w-10 h-10 flex items-center justify-center p-0" title="扫码查询">
+                    <i class="fa fa-qrcode"></i>
+                </button>
+            </div>
+            <form id="searchForm" class="space-y-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-gray-400 mb-2 text-sm">编码</label>
+                        <input type="text" id="code" class="input" placeholder="输入编码">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-2 text-sm">名称</label>
+                        <input type="text" id="name" class="input" placeholder="输入名称">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-2 text-sm">仓位</label>
+                        <input type="text" id="location" class="input" placeholder="输入仓位">
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-4 items-center justify-end">
+                    <button type="button" id="clearBtn" class="btn bg-gray-700 text-white hover:bg-gray-600">
+                        <i class="fa fa-refresh mr-2"></i>清空
+                    </button>
+                    <button type="submit" class="btn btn-primary py-4 text-lg">
+                        <i class="fa fa-search mr-2"></i>查询
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 添加仓位按钮 -->
+        <div class="flex flex-col space-y-4">
+            <a href="add-item.html" class="btn btn-primary py-4 text-lg text-center">
+                <i class="fa fa-plus mr-2"></i>添加仓位
+            </a>
+            <a href="inventory.html" class="btn btn-secondary py-4 text-lg text-center">
+                <i class="fa fa-list-alt mr-2"></i>盘点
+            </a>
+        </div>
+
+    </main>
+
+    <!-- 相机扫描模态框 -->
+    <div id="cameraModal" class="fixed inset-0 bg-black z-50 hidden">
+        <!-- 顶部控制栏 -->
+        <div class="absolute top-0 left-0 right-0 flex justify-between items-center p-4 z-10">
+            <button id="closeCameraModal" class="text-white hover:text-gray-300">
+                <i class="fa fa-times text-2xl"></i>
+            </button>
+            <h3 class="text-white font-semibold">销售单扫描</h3>
+            <button id="flashToggle" class="text-white hover:text-gray-300">
+                <i class="fa fa-flash text-xl"></i>
+            </button>
+        </div>
+        
+        <!-- 相机预览 -->
+        <div class="w-full h-full flex items-center justify-center">
+            <video id="cameraVideo" class="w-full h-full object-cover"></video>
+            <!-- 取景框 -->
+            <div class="absolute w-3/4 h-1/2 border-2 border-white/50 rounded-lg flex items-center justify-center">
+                <div class="w-4 h-4 border-t-2 border-l-2 border-white absolute top-0 left-0"></div>
+                <div class="w-4 h-4 border-t-2 border-r-2 border-white absolute top-0 right-0"></div>
+                <div class="w-4 h-4 border-b-2 border-l-2 border-white absolute bottom-0 left-0"></div>
+                <div class="w-4 h-4 border-b-2 border-r-2 border-white absolute bottom-0 right-0"></div>
+            </div>
+        </div>
+        
+        <!-- 底部控制栏 -->
+        <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center p-6 z-10">
+            <!-- 变焦选项 -->
+            <div class="flex space-x-2">
+                <button class="text-white hover:text-gray-300">0.5x</button>
+                <button class="text-white hover:text-gray-300">1x</button>
+                <button class="text-white hover:text-gray-300">2x</button>
+                <button class="text-white hover:text-gray-300">3x</button>
+                <button class="text-white hover:text-gray-300">5x</button>
+            </div>
+            
+            <!-- 快门按钮 -->
+            <button id="captureBtn" class="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center">
+                <div class="w-12 h-12 rounded-full bg-white"></div>
+            </button>
+            
+            <!-- 相册和摄像头切换 -->
+            <div class="flex space-x-4">
+                <input type="file" id="albumInput" accept="image/*" class="hidden">
+                <button id="albumBtn" class="text-white hover:text-gray-300">
+                    <i class="fa fa-image text-xl"></i>
+                </button>
+                <button id="cameraToggle" class="text-white hover:text-gray-300">
+                    <i class="fa fa-refresh text-xl"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 识别中提示 -->
+        <div id="recognizingOverlay" class="fixed inset-0 bg-black/70 flex items-center justify-center z-20 hidden">
+            <div class="text-white text-center">
+                <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-t-white border-r-white border-b-transparent border-l-transparent mb-4"></div>
+                <p class="text-xl">正在识别...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 查询结果模态框 -->
+    <div id="resultModal" class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-lg p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">查询结果</h3>
+                <button id="closeResultModal" class="text-gray-400 hover:text-white">
+                    <i class="fa fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div id="resultContent" class="space-y-4">
+                <!-- 结果将通过JavaScript动态生成 -->
+            </div>
+            <div class="flex justify-end mt-6">
+                <button id="closeResultBtn" class="btn bg-gray-700 text-white hover:bg-gray-600">
+                    关闭
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 检查登录状态和登录时间
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        const loginTime = localStorage.getItem('loginTime');
+        const eightHoursInMs = 8 * 60 * 60 * 1000;
+        const currentTime = new Date().getTime();
+        
+        if (!currentUser || !loginTime || (currentTime - loginTime) > eightHoursInMs) {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('loginTime');
+            window.location.href = 'login.html';
+        }
+        
+        // 每60秒检查一次登录时间
+        setInterval(function() {
+            const currentTime = new Date().getTime();
+            const loginTime = localStorage.getItem('loginTime');
+            if (loginTime && (currentTime - loginTime) > eightHoursInMs) {
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('loginTime');
+                window.location.href = 'login.html';
+            }
+        }, 60000);
+
+        // 菜单控制
+        document.getElementById('menuBtn').addEventListener('click', function() {
+            const menu = document.getElementById('menu');
+            menu.classList.toggle('hidden');
+        });
+
+        // 点击其他地方关闭菜单
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('menu');
+            const menuBtn = document.getElementById('menuBtn');
+            if (!menu.contains(e.target) && !menuBtn.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+
+
+
+        // 清空按钮
+        document.getElementById('clearBtn').addEventListener('click', function() {
+            if (confirm('确定要清空所有查询条件吗？')) {
+                document.getElementById('code').value = '';
+                document.getElementById('name').value = '';
+                document.getElementById('location').value = '';
+            }
+        });
+
+        // 查询表单提交
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const code = document.getElementById('code').value;
+            const name = document.getElementById('name').value;
+            const location = document.getElementById('location').value;
+            
+            // 保存查询参数到本地存储
+            localStorage.setItem('searchParams', JSON.stringify({ code, name, location }));
+            window.location.href = 'search-result.html';
+        });
+
+        // 百度OCR API配置信息
+        const API_KEY = 'IWuZdXzexxFHbJwvidvfWcQT';
+        const SECRET_KEY = 'aQMPy9B5A1GiZEGIMNDexPqe3TMgFRGM';
+        const TOKEN_URL = 'https://aip.baidubce.com/oauth/2.0/token';
+        const OCR_URL = 'https://aip.baidubce.com/rest/2.0/ocr/v1/general'; // 通用文字识别（标准含位置版）
+
+        // OCR 识别功能
+        let cameraStream;
+        let currentCamera = 'environment'; // environment: 后置摄像头, user: 前置摄像头
+        let flashMode = 'off'; // off: 关闭, on: 开启, auto: 自动
+        
+        function openOCR() {
+            document.getElementById('cameraModal').classList.remove('hidden');
+            startCamera();
+        }
+
+        // 关闭 OCR 识别
+        function closeOCR() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            document.getElementById('cameraModal').classList.add('hidden');
+        }
+
+        // 启动相机
+        async function startCamera() {
+            try {
+                const constraints = {
+                    video: {
+                        facingMode: currentCamera
+                    }
+                };
+                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                const video = document.getElementById('cameraVideo');
+                video.srcObject = cameraStream;
+                video.setAttribute('playsinline', true);
+                video.play();
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                alert('请在系统设置中允许本应用使用相机');
+                closeOCR();
+            }
+        }
+
+        // 切换摄像头
+        function toggleCamera() {
+            currentCamera = currentCamera === 'environment' ? 'user' : 'environment';
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+            }
+            startCamera();
+        }
+
+        // 切换闪光灯
+        function toggleFlash() {
+            flashMode = flashMode === 'off' ? 'on' : 'off';
+            if (cameraStream) {
+                const videoTrack = cameraStream.getVideoTracks()[0];
+                if (videoTrack) {
+                    videoTrack.applyConstraints({
+                        advanced: [{ torch: flashMode === 'on' }]
+                    }).catch(error => {
+                        console.error('无法设置闪光灯:', error);
+                    });
+                }
+            }
+        }
+
+        // 获取access_token
+        async function getAccessToken() {
+            try {
+                const response = await fetch(`${TOKEN_URL}?grant_type=client_credentials&client_id=${API_KEY}&client_secret=${SECRET_KEY}`);
+                if (!response.ok) {
+                    throw new Error(`Token获取失败: ${response.status} ${response.statusText}`);
+                }
+                const data = await response.json();
+                if (!data.access_token) {
+                    throw new Error(`Token获取失败: ${data.error || '未知错误'}`);
+                }
+                return data.access_token;
+            } catch (error) {
+                console.error('获取Token错误:', error);
+                throw error;
+            }
+        }
+
+        // 执行 OCR 识别
+        async function performOCR() {
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // 显示识别中提示
+            document.getElementById('recognizingOverlay').classList.remove('hidden');
+            
+            try {
+                // 转换为Base64
+                const base64 = canvas.toDataURL('image/jpeg').split(',')[1];
+                
+                // 获取access_token
+                const accessToken = await getAccessToken();
+
+                // 调用OCR API
+                const response = await fetch(`${OCR_URL}?access_token=${accessToken}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `image=${encodeURIComponent(base64)}`
+                });
+
+                const data = await response.json();
+
+                if (data.words_result) {
+                    // 处理识别结果
+                    const partCodes = extractPartCodes(data.words_result);
+                    
+                    if (partCodes.length > 0) {
+                        // 批量查询仓位信息
+                        await queryWarehouseLocations(partCodes);
+                    } else {
+                        alert('未识别到有效零件编码，请重新拍摄清晰的单据图片');
+                    }
+                } else {
+                    alert('识别失败，请重新拍摄或上传清晰图片');
+                }
+            } catch (error) {
+                console.error('OCR 识别错误:', error);
+                alert('网络异常，请检查网络连接后重试');
+            } finally {
+                document.getElementById('recognizingOverlay').classList.add('hidden');
+                closeOCR();
+            }
+        }
+        
+        // 从 OCR 结果中提取零件编码
+        function extractPartCodes(wordsResult) {
+            const codes = new Set();
+            const partCodePattern = /\d{5,}-\w{3,}-\w{3,}/g;
+            
+            // 分割文本为行
+            const lines = wordsResult.map(item => item.words.trim()).filter(line => line !== '');
+            
+            lines.forEach(line => {
+                const matches = line.match(partCodePattern);
+                if (matches) {
+                    matches.forEach(match => codes.add(match));
+                }
+            });
+            
+            return Array.from(codes);
+        }
+        
+        // 批量查询仓位信息
+        async function queryWarehouseLocations(partCodes) {
+            // 提取前五位字符
+            const codePrefixes = partCodes.map(code => code.substring(0, 5));
+            
+            // 从本地存储中查询真实数据
+            setTimeout(() => {
+                // 获取存储的仓位数据
+                const warehouseData = JSON.parse(localStorage.getItem('warehouseData') || '[]');
+                const results = [];
+                
+                // 遍历识别到的编码
+                partCodes.forEach((fullCode, index) => {
+                    const prefix = codePrefixes[index];
+                    
+                    // 从本地存储中查找匹配的仓位信息
+                    const matchedItem = warehouseData.find(item => 
+                        item.code && item.code.startsWith(prefix)
+                    );
+                    
+                    if (matchedItem) {
+                        // 找到匹配的仓位信息
+                        results.push({
+                            codePrefix: prefix,
+                            fullCode: fullCode,
+                            name: matchedItem.name || `配件${prefix}`,
+                            location: matchedItem.location || '未知仓位'
+                        });
+                    } else {
+                        // 未找到匹配的仓位信息
+                        results.push({
+                            codePrefix: prefix,
+                            fullCode: fullCode,
+                            name: `配件${prefix}`,
+                            location: '未找到仓位'
+                        });
+                    }
+                });
+                
+                // 显示查询结果
+                showQueryResults(results, partCodes);
+            }, 300);
+        }
+        
+        // 显示查询结果
+        function showQueryResults(results, originalCodes) {
+            const resultContent = document.getElementById('resultContent');
+            
+            if (results.length === 0) {
+                resultContent.innerHTML = `
+                    <div class="text-center text-gray-400 py-8">
+                        <i class="fa fa-search text-4xl mb-4"></i>
+                        <p>未查询到对应仓位信息</p>
+                        <div class="mt-4 text-left">
+                            <p class="text-sm text-gray-400">识别到的编码：</p>
+                            <ul class="list-disc list-inside text-sm">
+                                ${originalCodes.map(code => `<li>${code}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            } else {
+                resultContent.innerHTML = `
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="py-3 px-4 text-left text-gray-400">编码前五位</th>
+                                    <th class="py-3 px-4 text-left text-gray-400">完整编码</th>
+                                    <th class="py-3 px-4 text-left text-gray-400">配件名称</th>
+                                    <th class="py-3 px-4 text-left text-gray-400">仓位信息</th>
+                                    <th class="py-3 px-4 text-right text-gray-400">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${results.map(item => `
+                                    <tr class="border-b border-gray-700 hover:bg-gray-800">
+                                        <td class="py-3 px-4">${item.codePrefix}</td>
+                                        <td class="py-3 px-4">${item.fullCode}</td>
+                                        <td class="py-3 px-4">${item.name}</td>
+                                        <td class="py-3 px-4">${item.location}</td>
+                                        <td class="py-3 px-4 text-right">
+                                            <button class="text-primary hover:text-blue-400" onclick="viewDetails('${item.fullCode}')">
+                                                <i class="fa fa-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('resultModal').classList.remove('hidden');
+        }
+        
+        // 查看详情
+        function viewDetails(code) {
+            // 保存查询参数到本地存储
+            localStorage.setItem('searchParams', JSON.stringify({ code: code }));
+            window.location.href = 'search-result.html';
+        }
+        
+        // 从相册选择图像
+        function handleAlbumSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    // 显示识别中提示
+                    document.getElementById('recognizingOverlay').classList.remove('hidden');
+                    
+                    try {
+                        // 转换为Base64
+                        const base64 = e.target.result.split(',')[1];
+                        
+                        // 获取access_token
+                        const accessToken = await getAccessToken();
+
+                        // 调用OCR API
+                        const response = await fetch(`${OCR_URL}?access_token=${accessToken}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            },
+                            body: `image=${encodeURIComponent(base64)}`
+                        });
+
+                        const data = await response.json();
+
+                        if (data.words_result) {
+                            // 处理识别结果
+                            const partCodes = extractPartCodes(data.words_result);
+                            
+                            if (partCodes.length > 0) {
+                                // 批量查询仓位信息
+                                await queryWarehouseLocations(partCodes);
+                            } else {
+                                alert('未识别到有效零件编码，请重新拍摄清晰的单据图片');
+                            }
+                        } else {
+                            alert('识别失败，请重新拍摄或上传清晰图片');
+                        }
+                    } catch (error) {
+                        console.error('OCR 识别错误:', error);
+                        alert('网络异常，请检查网络连接后重试');
+                    } finally {
+                        document.getElementById('recognizingOverlay').classList.add('hidden');
+                        closeOCR();
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 扫码按钮点击事件
+        document.getElementById('scanBtn').addEventListener('click', openOCR);
+
+        // 相机相关事件监听器
+        document.getElementById('closeCameraModal').addEventListener('click', closeOCR);
+        document.getElementById('captureBtn').addEventListener('click', performOCR);
+        document.getElementById('cameraToggle').addEventListener('click', toggleCamera);
+        document.getElementById('flashToggle').addEventListener('click', toggleFlash);
+        document.getElementById('albumBtn').addEventListener('click', function() {
+            document.getElementById('albumInput').click();
+        });
+        document.getElementById('albumInput').addEventListener('change', handleAlbumSelect);
+
+        // 结果模态框事件监听器
+        document.getElementById('closeResultModal').addEventListener('click', function() {
+            document.getElementById('resultModal').classList.add('hidden');
+        });
+        document.getElementById('closeResultBtn').addEventListener('click', function() {
+            document.getElementById('resultModal').classList.add('hidden');
+        });
+    </script>
+</body>
+</html>
