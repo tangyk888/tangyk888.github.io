@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仓库仓位查询系统 - 系统设置</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#10b981',
+                        danger: '#ef4444',
+                        dark: '#1e293b',
+                        'dark-bg': '#0f172a',
+                        'dark-card': '#1e293b',
+                    },
+                },
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card {
+                @apply bg-dark-card rounded-lg shadow-md p-6;
+            }
+            .btn {
+                @apply px-4 py-3 rounded-md font-medium transition-all;
+            }
+            .btn-primary {
+                @apply bg-primary text-white hover:bg-primary/90;
+            }
+            .btn-danger {
+                @apply bg-danger text-white hover:bg-danger/90;
+            }
+            .btn-secondary {
+                @apply bg-gray-700 text-white hover:bg-gray-600;
+            }
+            .input {
+                @apply w-full px-4 py-3 bg-dark border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-white;
+            }
+        }
+    </style>
+</head>
+<body class="bg-dark-bg min-h-screen text-white">
+    <!-- 顶部导航 -->
+    <header class="bg-dark sticky top-0 z-10 shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center">
+                <button id="backBtn" class="mr-4 text-gray-400 hover:text-white">
+                    <i class="fa fa-arrow-left text-xl"></i>
+                </button>
+                <h1 class="text-xl font-bold">系统设置</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-400">欢迎, <span class="text-white">admin</span></span>
+                <div class="relative">
+                    <button id="menuBtn" class="text-gray-400 hover:text-white">
+                        <i class="fa fa-ellipsis-v text-xl"></i>
+                    </button>
+                    <!-- 弹出菜单 -->
+                    <div id="menu" class="absolute right-0 mt-2 w-48 bg-dark-card rounded-md shadow-lg py-2 hidden">
+                        <a href="index.html" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white">返回主页</a>
+                        <a href="user-management.html" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white">用户管理</a>
+                        <a href="login.html" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white">登出</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- 页面标题 -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold mb-2">系统设置</h1>
+            <p class="text-gray-400">配置系统参数和管理数据</p>
+            <div class="w-24 h-1 bg-primary mx-auto mt-4"></div>
+        </div>
+
+        <!-- 系统配置卡片 -->
+        <div class="card mb-8">
+            <div class="flex items-center mb-6">
+                <i class="fa fa-cog text-primary mr-2"></i>
+                <h2 class="text-lg font-semibold">系统配置</h2>
+            </div>
+            <form id="settingsForm" class="space-y-4">
+                <div>
+                    <label class="block text-gray-400 mb-2 text-sm">系统名称</label>
+                    <input type="text" id="systemName" class="input" placeholder="输入系统名称">
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa fa-save mr-2"></i>保存设置
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 数据管理卡片 -->
+        <div class="card">
+            <div class="flex items-center mb-6">
+                <i class="fa fa-database text-primary mr-2"></i>
+                <h2 class="text-lg font-semibold">数据管理</h2>
+            </div>
+            <div class="space-y-6">
+                <!-- 数据导出和导入 -->
+                <div class="border border-gray-700 rounded-lg p-4">
+                    <h3 class="text-md font-medium mb-4">数据导出/导入</h3>
+                    <div class="flex flex-wrap gap-4">
+                        <button id="exportData" class="btn btn-primary flex-1">
+                            <i class="fa fa-download mr-2"></i>导出数据
+                        </button>
+                        <button id="importData" class="btn btn-secondary flex-1">
+                            <i class="fa fa-upload mr-2"></i>导入数据
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 数据备份 -->
+                <div class="border border-gray-700 rounded-lg p-4">
+                    <h3 class="text-md font-medium mb-4">数据备份</h3>
+                    <div class="flex flex-wrap gap-4">
+                        <button id="backupData" class="btn btn-primary flex-1">
+                            <i class="fa fa-save mr-2"></i>立即备份
+                        </button>
+                        <button id="scheduleBackup" class="btn btn-secondary flex-1">
+                            <i class="fa fa-calendar mr-2"></i>定时备份
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 备份历史 -->
+                <div class="border border-gray-700 rounded-lg p-4">
+                    <h3 class="text-md font-medium mb-4">备份历史</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="py-2 px-4 text-left text-gray-400 text-xs">备份时间</th>
+                                    <th class="py-2 px-4 text-left text-gray-400 text-xs">备份大小</th>
+                                    <th class="py-2 px-4 text-right text-gray-400 text-xs">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="backupHistoryTableBody">
+                                <!-- 备份历史将通过JavaScript动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 数据恢复 -->
+                <div class="border border-gray-700 rounded-lg p-4">
+                    <h3 class="text-md font-medium mb-4">数据恢复</h3>
+                    <div class="flex flex-wrap gap-4">
+                        <button id="restoreData" class="btn btn-secondary flex-1">
+                            <i class="fa fa-upload mr-2"></i>从备份恢复
+                        </button>
+                        <button id="clearData" class="btn btn-danger flex-1">
+                            <i class="fa fa-trash mr-2"></i>清空数据
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 系统信息 -->
+                <div class="border border-gray-700 rounded-lg p-4">
+                    <h3 class="text-md font-medium mb-4">系统信息</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">系统版本</span>
+                            <span class="text-white">1.0.0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">最后更新</span>
+                            <span class="text-white">2026-03-02</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">本地存储</span>
+                            <span class="text-white">已启用</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">最后备份</span>
+                            <span class="text-white" id="lastBackupTime">从未备份</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 导入数据模态框 -->
+    <div id="importModal" class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-lg p-6 max-w-md w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">导入数据</h3>
+                <button id="closeImportModal" class="text-gray-400 hover:text-white">
+                    <i class="fa fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <p class="text-gray-400">请选择要导入的JSON文件</p>
+                <input type="file" id="fileInput" class="input w-full mb-4" accept=".json" capture="camera" multiple>
+                <div class="flex justify-end space-x-4">
+                    <button id="cancelImportBtn" class="btn bg-gray-700 text-white hover:bg-gray-600">取消</button>
+                    <button id="confirmImportBtn" class="btn btn-primary">导入</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理员验证模态框 -->
+    <div id="authModal" class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-lg p-6 max-w-md w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">管理员验证</h3>
+                <button id="closeAuthModal" class="text-gray-400 hover:text-white">
+                    <i class="fa fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <p class="text-gray-400">请输入管理员账号密码以确认操作</p>
+                <div>
+                    <label class="block text-gray-400 mb-2 text-sm">用户名</label>
+                    <input type="text" id="authUsername" class="input" placeholder="输入管理员用户名">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-2 text-sm">密码</label>
+                    <input type="password" id="authPassword" class="input" placeholder="输入管理员密码">
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button id="cancelAuthBtn" class="btn bg-gray-700 text-white hover:bg-gray-600">取消</button>
+                    <button id="confirmAuthBtn" class="btn btn-primary">确认</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 检查登录状态和登录时间
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        const loginTime = localStorage.getItem('loginTime');
+        const eightHoursInMs = 8 * 60 * 60 * 1000;
+        const currentTime = new Date().getTime();
+        
+        if (!currentUser || !loginTime || (currentTime - loginTime) > eightHoursInMs) {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('loginTime');
+            window.location.href = 'login.html';
+        }
+        
+        // 每60秒检查一次登录时间
+        setInterval(function() {
+            const currentTime = new Date().getTime();
+            const loginTime = localStorage.getItem('loginTime');
+            if (loginTime && (currentTime - loginTime) > eightHoursInMs) {
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('loginTime');
+                window.location.href = 'login.html';
+            }
+        }, 60000);
+
+        // 菜单控制
+        document.getElementById('menuBtn').addEventListener('click', function() {
+            const menu = document.getElementById('menu');
+            menu.classList.toggle('hidden');
+        });
+
+        // 点击其他地方关闭菜单
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('menu');
+            const menuBtn = document.getElementById('menuBtn');
+            if (!menu.contains(e.target) && !menuBtn.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        // 返回按钮
+        document.getElementById('backBtn').addEventListener('click', function() {
+            window.location.href = 'index.html';
+        });
+
+        // 加载设置
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('settings') || '{}');
+            document.getElementById('systemName').value = settings.systemName || '仓库仓位查询系统';
+        }
+
+        // 保存设置
+        document.getElementById('settingsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const systemName = document.getElementById('systemName').value;
+            
+            const settings = { systemName };
+            localStorage.setItem('settings', JSON.stringify(settings));
+            alert('设置保存成功');
+        });
+
+        // 导出数据
+        document.getElementById('exportData').addEventListener('click', function() {
+            const warehouseItems = JSON.parse(localStorage.getItem('warehouseItems') || '[]');
+            const dataStr = JSON.stringify(warehouseItems, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'warehouse-data.json';
+            link.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // 导入数据
+        document.getElementById('importData').addEventListener('click', function() {
+            document.getElementById('importModal').classList.remove('hidden');
+        });
+
+        document.getElementById('closeImportModal').addEventListener('click', function() {
+            document.getElementById('importModal').classList.add('hidden');
+        });
+
+        document.getElementById('cancelImportBtn').addEventListener('click', function() {
+            document.getElementById('importModal').classList.add('hidden');
+        });
+
+        document.getElementById('confirmImportBtn').addEventListener('click', function() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        localStorage.setItem('warehouseItems', JSON.stringify(data));
+                        alert('数据导入成功');
+                        document.getElementById('importModal').classList.add('hidden');
+                    } catch (err) {
+                        alert('数据格式错误');
+                    }
+                };
+                reader.readAsText(file);
+            } else {
+                alert('请选择文件');
+            }
+        });
+
+        // 数据备份功能
+        document.getElementById('backupData').addEventListener('click', function() {
+            // 创建备份
+            const backupData = {
+                timestamp: new Date().getTime(),
+                data: {
+                    warehouseItems: JSON.parse(localStorage.getItem('warehouseItems') || '[]'),
+                    users: JSON.parse(localStorage.getItem('users') || '[]'),
+                    settings: JSON.parse(localStorage.getItem('settings') || '{}')
+                }
+            };
+            
+            // 获取备份历史
+            const backupHistory = JSON.parse(localStorage.getItem('backupHistory') || '[]');
+            
+            // 添加新备份
+            backupHistory.unshift(backupData);
+            
+            // 限制备份历史数量为10个
+            if (backupHistory.length > 10) {
+                backupHistory.pop();
+            }
+            
+            // 保存备份历史
+            localStorage.setItem('backupHistory', JSON.stringify(backupHistory));
+            
+            // 更新最后备份时间
+            updateLastBackupTime();
+            
+            // 刷新备份历史表格
+            loadBackupHistory();
+            
+            alert('备份成功');
+        });
+
+        // 定时备份功能
+        document.getElementById('scheduleBackup').addEventListener('click', function() {
+            alert('定时备份功能已启用，系统将每天凌晨自动备份数据');
+        });
+
+        // 从备份恢复功能
+        document.getElementById('restoreData').addEventListener('click', function() {
+            // 打开管理员验证模态框
+            document.getElementById('authModal').classList.remove('hidden');
+        });
+
+        // 清空数据
+        document.getElementById('clearData').addEventListener('click', function() {
+            // 打开管理员验证模态框
+            document.getElementById('authModal').classList.remove('hidden');
+        });
+
+        // 关闭管理员验证模态框
+        document.getElementById('closeAuthModal').addEventListener('click', function() {
+            document.getElementById('authModal').classList.add('hidden');
+        });
+
+        document.getElementById('cancelAuthBtn').addEventListener('click', function() {
+            document.getElementById('authModal').classList.add('hidden');
+        });
+
+        // 确认管理员验证
+        document.getElementById('confirmAuthBtn').addEventListener('click', function() {
+            const username = document.getElementById('authUsername').value;
+            const password = document.getElementById('authPassword').value;
+            
+            // 获取用户列表
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            
+            // 验证管理员账号密码
+            const adminUser = users.find(u => u.username === username && u.password === password && u.role === 'admin');
+            
+            if (adminUser) {
+                // 验证成功，检查触发来源
+                const restoreBtn = document.getElementById('restoreData');
+                const clearBtn = document.getElementById('clearData');
+                
+                // 检查哪个按钮触发了验证
+                if (restoreBtn.classList.contains('active')) {
+                    // 执行恢复操作
+                    restoreFromBackup();
+                } else if (clearBtn.classList.contains('active')) {
+                    // 执行清空操作
+                    if (confirm('确定要清空所有仓位数据吗？此操作不可恢复。')) {
+                        localStorage.setItem('warehouseItems', JSON.stringify([]));
+                        alert('数据已清空');
+                    }
+                }
+                
+                // 关闭模态框
+                document.getElementById('authModal').classList.add('hidden');
+                // 清空输入框
+                document.getElementById('authUsername').value = '';
+                document.getElementById('authPassword').value = '';
+                // 移除按钮的active类
+                restoreBtn.classList.remove('active');
+                clearBtn.classList.remove('active');
+            } else {
+                // 验证失败
+                alert('管理员账号密码错误');
+            }
+        });
+
+        // 恢复数据函数
+        function restoreFromBackup() {
+            const backupHistory = JSON.parse(localStorage.getItem('backupHistory') || '[]');
+            
+            if (backupHistory.length === 0) {
+                alert('没有可用的备份');
+                return;
+            }
+            
+            // 显示备份选择列表
+            let backupOptions = '';
+            backupHistory.forEach((backup, index) => {
+                const date = new Date(backup.timestamp);
+                const dateString = date.toLocaleString();
+                backupOptions += `<option value="${index}">${dateString}</option>`;
+            });
+            
+            const selectHtml = `
+                <select id="backupSelect" class="input mb-4">
+                    ${backupOptions}
+                </select>
+            `;
+            
+            // 创建模态框
+            const modalHtml = `
+                <div id="restoreModal" class="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+                    <div class="bg-dark-card rounded-lg p-6 max-w-md w-full">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold">选择备份</h3>
+                            <button id="closeRestoreModal" class="text-gray-400 hover:text-white">
+                                <i class="fa fa-times text-2xl"></i>
+                            </button>
+                        </div>
+                        <div class="space-y-4">
+                            <p class="text-gray-400">请选择要恢复的备份</p>
+                            ${selectHtml}
+                            <div class="flex justify-end space-x-4">
+                                <button id="cancelRestoreBtn" class="btn bg-gray-700 text-white hover:bg-gray-600">取消</button>
+                                <button id="confirmRestoreBtn" class="btn btn-primary">恢复</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 添加到文档
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // 关闭按钮
+            document.getElementById('closeRestoreModal').addEventListener('click', function() {
+                document.getElementById('restoreModal').remove();
+            });
+            
+            document.getElementById('cancelRestoreBtn').addEventListener('click', function() {
+                document.getElementById('restoreModal').remove();
+            });
+            
+            // 确认恢复
+            document.getElementById('confirmRestoreBtn').addEventListener('click', function() {
+                const selectedIndex = document.getElementById('backupSelect').value;
+                const selectedBackup = backupHistory[selectedIndex];
+                
+                if (confirm('确定要从所选备份恢复数据吗？当前数据将被覆盖。')) {
+                    // 恢复数据
+                    localStorage.setItem('warehouseItems', JSON.stringify(selectedBackup.data.warehouseItems));
+                    localStorage.setItem('users', JSON.stringify(selectedBackup.data.users));
+                    localStorage.setItem('settings', JSON.stringify(selectedBackup.data.settings));
+                    
+                    alert('数据恢复成功');
+                    document.getElementById('restoreModal').remove();
+                }
+            });
+        }
+
+        // 加载备份历史
+        function loadBackupHistory() {
+            const backupHistory = JSON.parse(localStorage.getItem('backupHistory') || '[]');
+            const tableBody = document.getElementById('backupHistoryTableBody');
+            
+            tableBody.innerHTML = '';
+            
+            if (backupHistory.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-gray-400">暂无备份历史</td></tr>';
+                return;
+            }
+            
+            backupHistory.forEach((backup, index) => {
+                const date = new Date(backup.timestamp);
+                const dateString = date.toLocaleString();
+                const dataSize = JSON.stringify(backup.data).length;
+                const sizeString = (dataSize / 1024).toFixed(2) + ' KB';
+                
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-700';
+                row.innerHTML = `
+                    <td class="py-3 px-4">${dateString}</td>
+                    <td class="py-3 px-4">${sizeString}</td>
+                    <td class="py-3 px-4 text-right">
+                        <button class="text-primary hover:text-white mr-3" onclick="restoreFromBackupIndex(${index})"><i class="fa fa-refresh"></i></button>
+                        <button class="text-danger hover:text-white" onclick="deleteBackup(${index})"><i class="fa fa-trash"></i></button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // 从指定索引恢复
+        window.restoreFromBackupIndex = function(index) {
+            const backupHistory = JSON.parse(localStorage.getItem('backupHistory') || '[]');
+            const selectedBackup = backupHistory[index];
+            
+            if (confirm('确定要从所选备份恢复数据吗？当前数据将被覆盖。')) {
+                // 恢复数据
+                localStorage.setItem('warehouseItems', JSON.stringify(selectedBackup.data.warehouseItems));
+                localStorage.setItem('users', JSON.stringify(selectedBackup.data.users));
+                localStorage.setItem('settings', JSON.stringify(selectedBackup.data.settings));
+                
+                alert('数据恢复成功');
+            }
+        };
+
+        // 删除备份
+        window.deleteBackup = function(index) {
+            // 创建确认提醒窗口
+            const confirmMessage = '确定要删除此备份吗？\n此操作不可恢复。';
+            
+            // 显示确认对话框
+            const result = confirm(confirmMessage);
+            
+            // 只有当用户点击确认时才执行删除操作
+            if (result === true) {
+                const backupHistory = JSON.parse(localStorage.getItem('backupHistory') || '[]');
+                backupHistory.splice(index, 1);
+                localStorage.setItem('backupHistory', JSON.stringify(backupHistory));
+                loadBackupHistory();
+                updateLastBackupTime();
+                // 显示删除成功提醒
+                alert('备份删除成功');
+            }
+            // 取消操作不显示提醒
+        };
+
+        // 更新最后备份时间
+        function updateLastBackupTime() {
+            const backupHistory = JSON.parse(localStorage.getItem('backupHistory') || '[]');
+            const lastBackupTimeElement = document.getElementById('lastBackupTime');
+            
+            if (backupHistory.length > 0) {
+                const lastBackup = backupHistory[0];
+                const date = new Date(lastBackup.timestamp);
+                lastBackupTimeElement.textContent = date.toLocaleString();
+            } else {
+                lastBackupTimeElement.textContent = '从未备份';
+            }
+        }
+
+        // 为恢复和清空按钮添加点击事件
+        document.getElementById('restoreData').addEventListener('click', function() {
+            this.classList.add('active');
+            document.getElementById('clearData').classList.remove('active');
+            document.getElementById('authModal').classList.remove('hidden');
+        });
+
+        document.getElementById('clearData').addEventListener('click', function() {
+            this.classList.add('active');
+            document.getElementById('restoreData').classList.remove('active');
+            document.getElementById('authModal').classList.remove('hidden');
+        });
+
+        // 加载设置
+        loadSettings();
+        
+        // 加载备份历史
+        loadBackupHistory();
+        
+        // 更新最后备份时间
+        updateLastBackupTime();
+    </script>
+</body>
+</html>

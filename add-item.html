@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仓库仓位查询系统 - 仓位录入</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#10b981',
+                        danger: '#ef4444',
+                        dark: '#1e293b',
+                        'dark-bg': '#0f172a',
+                        'dark-card': '#1e293b',
+                    },
+                },
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card {
+                @apply bg-dark-card rounded-lg shadow-md p-6;
+            }
+            .btn {
+                @apply px-4 py-3 rounded-md font-medium transition-all;
+            }
+            .btn-primary {
+                @apply bg-primary text-white hover:bg-primary/90;
+            }
+            .btn-secondary {
+                @apply bg-secondary text-white hover:bg-secondary/90;
+            }
+            .btn-danger {
+                @apply bg-danger text-white hover:bg-danger/90;
+            }
+            .input {
+                @apply w-full px-4 py-3 bg-dark border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-white;
+            }
+            .table {
+                @apply w-full border-collapse;
+            }
+            .table th {
+                @apply bg-gray-800 border-b border-gray-700 py-3 px-4 text-left text-sm text-gray-400;
+            }
+            .table td {
+                @apply border-b border-gray-700 py-3 px-4 text-sm;
+            }
+            .table tr:hover {
+                @apply bg-gray-800;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-dark-bg min-h-screen text-white">
+    <!-- 顶部导航 -->
+    <header class="bg-dark sticky top-0 z-10 shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center">
+                <button id="backBtn" class="mr-4 text-gray-400 hover:text-white">
+                    <i class="fa fa-arrow-left text-xl"></i>
+                </button>
+                <h1 class="text-xl font-bold">仓位录入</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-400">欢迎, <span class="text-white">admin</span></span>
+                <div class="relative">
+                    <button id="menuBtn" class="text-gray-400 hover:text-white">
+                        <i class="fa fa-ellipsis-v text-xl"></i>
+                    </button>
+                    <!-- 弹出菜单 -->
+                    <div id="menu" class="absolute right-0 mt-2 w-48 bg-dark-card rounded-md shadow-lg py-2 hidden">
+                        <a href="index.html" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white">返回主页</a>
+                        <a href="user-management.html" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white">用户管理</a>
+                        <a href="settings.html" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white">系统设置</a>
+                        <a href="login.html" class="block px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white">登出</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- 页面标题 -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold mb-2">仓位录入</h1>
+        </div>
+
+        <!-- 录入表单 -->
+        <div class="card mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center">
+                    <i class="fa fa-plus-circle text-primary mr-2"></i>
+                    <h2 class="text-lg font-semibold">添加仓位</h2>
+                </div>
+                <div class="flex space-x-2">
+                    <button type="button" id="scanQrBtn" class="btn btn-primary p-3">
+                        <i class="fa fa-qrcode"></i>
+                    </button>
+                </div>
+            </div>
+            <form id="manualForm" class="space-y-4">
+                <div>
+                    <label class="block text-gray-400 mb-2 text-sm">仓位</label>
+                    <input type="text" id="location" class="input" placeholder="输入仓位">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-2 text-sm">编码</label>
+                    <input type="text" id="code" class="input" placeholder="输入编码">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-2 text-sm">名称</label>
+                    <input type="text" id="name" class="input" placeholder="输入名称">
+                </div>
+
+                <div>
+                    <label class="block text-gray-400 mb-2 text-sm">图片</label>
+                    <div class="flex space-x-2 items-center">
+                        <input type="file" id="image" class="input w-full mb-4" accept="image/*" capture="camera" multiple>
+
+                        <button type="button" id="imageUploadBtn" class="btn bg-green-600 text-white p-3 hover:bg-green-500">
+                            <i class="fa fa-camera"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit" class="btn btn-primary w-full">
+                        <i class="fa fa-plus mr-2"></i>添加
+                    </button>
+                </div>
+            </form>
+            <div id="qrScanArea" class="hidden mt-6">
+                <div class="border border-gray-700 rounded-lg p-4">
+                    <h3 class="text-md font-medium mb-2">扫码录入</h3>
+                    <div class="w-full">
+                        <video id="qrVideo" class="w-full h-96 object-cover border rounded-md"></video>
+                    </div>
+                    <div class="mt-2 text-center">
+                        <button id="stopQrScanBtn" class="btn btn-primary">
+                            <i class="fa fa-stop mr-2"></i>停止扫码
+                        </button>
+                        <p class="text-gray-400 text-sm mt-2">二维码格式：仓位 编码 名称</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 仓位列表 -->
+        <div class="card">
+            <div class="flex items-center justify-between mb-0 bg-gray-800 p-4 rounded-t-lg">
+                <div class="flex items-center">
+                    <i class="fa fa-list text-primary mr-2"></i>
+                    <h2 class="text-lg font-semibold">仓位信息</h2>
+                </div>
+                <div class="w-64">
+                    <div class="relative">
+                        <input type="text" id="locationSearch" class="w-full px-4 py-2 bg-dark border border-gray-700 rounded text-white text-sm" placeholder="搜索仓位">
+                        <button type="button" id="searchBtn" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-900 rounded-b-lg">
+                <div class="max-h-96 overflow-y-auto">
+                    <table class="w-full">
+                        <thead class="sticky top-0 bg-gray-800">
+                            <tr class="border-b border-gray-700">
+                                <th class="py-3 px-4 text-left text-sm text-gray-400">仓位</th>
+                                <th class="py-3 px-4 text-left text-sm text-gray-400">编码</th>
+                                <th class="py-3 px-4 text-left text-sm text-gray-400">名称</th>
+                                <th class="py-3 px-4 text-right text-sm text-gray-400">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemTableBody">
+                            <!-- 表格内容将通过JavaScript动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 全局变量
+        let selectedImages = [];
+        let qrStream = null;
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM加载完成，初始化系统');
+            initializeEvents();
+            loadItems();
+        });
+
+        // 初始化事件监听
+        function initializeEvents() {
+            // 表单提交事件
+            document.getElementById('manualForm').addEventListener('submit', handleFormSubmit);
+            
+            // 图片上传按钮点击事件
+            document.getElementById('imageUploadBtn').addEventListener('click', function() {
+                document.getElementById('image').click();
+            });
+            
+            // 图片选择事件
+            document.getElementById('image').addEventListener('change', handleImageChange);
+            
+            // 二维码扫描按钮点击事件
+            document.getElementById('scanQrBtn').addEventListener('click', startQrScan);
+            
+            // 停止扫码按钮点击事件
+            document.getElementById('stopQrScanBtn').addEventListener('click', stopQrScan);
+            
+            // 菜单控制
+            document.getElementById('menuBtn').addEventListener('click', function() {
+                const menu = document.getElementById('menu');
+                menu.classList.toggle('hidden');
+            });
+            
+            // 点击其他地方关闭菜单
+            document.addEventListener('click', function(e) {
+                const menu = document.getElementById('menu');
+                const menuBtn = document.getElementById('menuBtn');
+                if (!menu.contains(e.target) && !menuBtn.contains(e.target)) {
+                    menu.classList.add('hidden');
+                }
+            });
+            
+            // 返回按钮
+            document.getElementById('backBtn').addEventListener('click', function() {
+                window.location.href = 'index.html';
+            });
+            
+            // 搜索功能
+            const searchInput = document.getElementById('locationSearch');
+            const searchBtn = document.getElementById('searchBtn');
+            
+            // 搜索按钮点击事件
+            searchBtn.addEventListener('click', function() {
+                const searchQuery = searchInput.value.trim();
+                loadItems(searchQuery);
+            });
+            
+            // 回车键事件
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const searchQuery = searchInput.value.trim();
+                    loadItems(searchQuery);
+                }
+            });
+        }
+
+        // 处理表单提交
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const location = document.getElementById('location').value.trim();
+            const code = document.getElementById('code').value.trim();
+            const name = document.getElementById('name').value.trim();
+            
+            if (!location || !code) {
+                alert('请填写仓位和编码');
+                return;
+            }
+            
+            saveItem(location, code, name, selectedImages);
+        }
+
+        // 处理图片选择
+        function handleImageChange(e) {
+            const files = e.target.files;
+            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+            
+            if (files && files.length > 0) {
+                imagePreviewContainer.classList.remove('hidden');
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        const imageUrl = e.target.result;
+                        const currentIndex = selectedImages.length;
+                        selectedImages.push(imageUrl);
+                        
+                        const previewItem = document.createElement('div');
+                        previewItem.className = 'relative w-16 h-16 bg-gray-800 rounded overflow-hidden';
+                        previewItem.innerHTML = `
+                            <img src="${imageUrl}" alt="预览" class="w-full h-full object-cover cursor-pointer" onclick="showLargeImage('${imageUrl}')">
+                            <button type="button" class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600" onclick="removeImage(${currentIndex})">
+                                <i class="fa fa-trash text-xs"></i>
+                            </button>
+                        `;
+                        
+                        imagePreviewContainer.appendChild(previewItem);
+                    };
+                    
+                    reader.readAsDataURL(file);
+                }
+                
+                // 重置input值，允许重复选择同一张图片
+                document.getElementById('image').value = '';
+            }
+        }
+
+        // 移除图片
+        function removeImage(index) {
+            selectedImages.splice(index, 1);
+            updateImagePreview();
+        }
+
+        // 更新图片预览
+        function updateImagePreview() {
+            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+            imagePreviewContainer.innerHTML = '';
+            
+            if (selectedImages.length > 0) {
+                selectedImages.forEach((imageUrl, i) => {
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'relative w-16 h-16 bg-gray-800 rounded overflow-hidden';
+                    previewItem.innerHTML = `
+                        <img src="${imageUrl}" alt="预览" class="w-full h-full object-cover cursor-pointer" onclick="showLargeImage('${imageUrl}')">
+                        <button type="button" class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600" onclick="removeImage(${i})">
+                            <i class="fa fa-trash text-xs"></i>
+                        </button>
+                    `;
+                    
+                    imagePreviewContainer.appendChild(previewItem);
+                });
+                imagePreviewContainer.classList.remove('hidden');
+            } else {
+                imagePreviewContainer.classList.add('hidden');
+                document.getElementById('image').value = '';
+            }
+        }
+
+        // 开始二维码扫描
+        function startQrScan() {
+            document.getElementById('qrScanArea').classList.remove('hidden');
+            
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                .then(function(stream) {
+                    qrStream = stream;
+                    const qrVideo = document.getElementById('qrVideo');
+                    qrVideo.srcObject = stream;
+                    qrVideo.setAttribute('playsinline', true);
+                    qrVideo.play();
+                    requestAnimationFrame(qrTick);
+                })
+                .catch(function(err) {
+                    console.error('Error accessing camera:', err);
+                    alert('无法访问摄像头');
+                    document.getElementById('qrScanArea').classList.add('hidden');
+                });
+        }
+
+        // 停止二维码扫描
+        function stopQrScan() {
+            if (qrStream) {
+                qrStream.getTracks().forEach(track => track.stop());
+                qrStream = null;
+            }
+            document.getElementById('qrScanArea').classList.add('hidden');
+        }
+
+        // 二维码扫描逻辑
+        function qrTick() {
+            const qrVideo = document.getElementById('qrVideo');
+            if (!qrVideo || !qrStream) return;
+            
+            if (qrVideo.readyState === qrVideo.HAVE_ENOUGH_DATA) {
+                const canvas = document.createElement('canvas');
+                canvas.width = qrVideo.videoWidth;
+                canvas.height = qrVideo.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(qrVideo, 0, 0, canvas.width, canvas.height);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                
+                if (code) {
+                    const qrData = code.data;
+                    const qrParts = qrData.split(' ');
+                    
+                    if (qrParts.length >= 3) {
+                        const location = qrParts[0];
+                        const code = qrParts[1];
+                        const name = qrParts.slice(2).join(' ');
+                        
+                        stopQrScan();
+                        saveItem(location, code, name, []);
+                    } else {
+                        // 二维码格式不正确，不显示提示
+                    }
+                }
+            }
+            requestAnimationFrame(qrTick);
+        }
+
+        // 加载仓位数据
+        function loadItems(searchQuery = '') {
+            let warehouseItems = JSON.parse(localStorage.getItem('warehouseItems') || '[]');
+            
+            // 只有当数据不存在时才添加测试数据
+            if (warehouseItems.length === 0) {
+                const testItems = [
+                    { location: 'A1', code: '001', name: '测试仓位1' },
+                    { location: 'A2', code: '002', name: '测试仓位2' },
+                    { location: 'A3', code: '003', name: '测试仓位3' }
+                ];
+                localStorage.setItem('warehouseItems', JSON.stringify(testItems));
+                warehouseItems = testItems;
+            }
+            
+            // 处理搜索
+            if (searchQuery) {
+                const searchLower = searchQuery.toLowerCase();
+                const matchingItems = warehouseItems.filter(item => 
+                    item.location.toLowerCase().includes(searchLower)
+                );
+                const nonMatchingItems = warehouseItems.filter(item => 
+                    !item.location.toLowerCase().includes(searchLower)
+                );
+                // 将匹配的项目放在前面
+                warehouseItems = [...matchingItems, ...nonMatchingItems];
+            }
+            
+            const tableBody = document.getElementById('itemTableBody');
+            if (!tableBody) {
+                console.error('找不到itemTableBody元素');
+                return;
+            }
+            
+            tableBody.innerHTML = '';
+            
+            if (warehouseItems.length === 0) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = `
+                    <td colspan="4" class="py-8 text-center text-gray-400">
+                        <i class="fa fa-folder-open text-4xl mb-2"></i>
+                        <p>暂无已录入的仓位</p>
+                    </td>
+                `;
+                tableBody.appendChild(emptyRow);
+            } else {
+                warehouseItems.forEach((item, index) => {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b border-gray-700 hover:bg-gray-800';
+                    row.innerHTML = `
+                        <td class="py-3 px-4">${item.location || '-'}</td>
+                        <td class="py-3 px-4">${item.code || '-'}</td>
+                        <td class="py-3 px-4">${item.name || '-'}</td>
+                        <td class="py-3 px-4 flex justify-end space-x-3">
+                            <button class="text-primary hover:underline" onclick="viewDetail(${index})"><i class="fa fa-eye"></i></button>
+                            <button class="text-danger hover:underline" onclick="deleteItem(${index})"><i class="fa fa-trash"></i></button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+        }
+
+        // 保存项目
+        function saveItem(location, code, name, images) {
+            const warehouseItems = JSON.parse(localStorage.getItem('warehouseItems') || '[]');
+            
+            const newItem = {
+                location: location,
+                code: code,
+                name: name,
+                createdAt: new Date().toLocaleString('zh-CN'),
+                updatedAt: new Date().toLocaleString('zh-CN')
+            };
+            
+            if (images && images.length > 0) {
+                newItem.images = images;
+            }
+            
+            warehouseItems.unshift(newItem);
+            localStorage.setItem('warehouseItems', JSON.stringify(warehouseItems));
+            
+            // 清空表单
+            document.getElementById('location').value = '';
+            document.getElementById('code').value = '';
+            document.getElementById('name').value = '';
+            selectedImages = [];
+            updateImagePreview();
+            
+            loadItems();
+        }
+
+        // 查看详情
+        function viewDetail(index) {
+            const warehouseItems = JSON.parse(localStorage.getItem('warehouseItems') || '[]');
+            const item = warehouseItems[index];
+            
+            if (item) {
+                // 创建模态框
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black/90 flex items-center justify-center z-50';
+                modal.id = 'detailModal';
+                
+                // 模态框内容
+                modal.innerHTML = `
+                    <div class="bg-dark-card rounded-lg p-6 w-full max-w-4xl">
+                        <div class="flex justify-between items-center mb-6">
+                            <div class="flex items-center space-x-4">
+                                <h3 class="text-lg font-semibold">详细信息</h3>
+                                ${item.createdAt ? `
+                                    <span class="text-sm text-gray-400">创建时间 ${item.createdAt}</span>
+                                ` : ''}
+                            </div>
+                            <button id="closeDetailModal" class="text-gray-400 hover:text-white">
+                                <i class="fa fa-times text-2xl"></i>
+                            </button>
+                        </div>
+                        <div class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- 左侧信息 -->
+                                <div class="space-y-4">
+                                    <div>
+                                        <h4 class="text-gray-400 text-sm mb-1">仓位</h4>
+                                        <p class="text-xl font-bold text-white">${item.location || '-'}</p>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-gray-400 text-sm mb-1">编码</h4>
+                                        <p class="text-lg text-white">${item.code || '-'}</p>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-gray-400 text-sm mb-1">名称</h4>
+                                        <p class="text-lg text-white">${item.name || '-'}</p>
+                                    </div>
+
+                                </div>
+                                
+                                <!-- 右侧图片 -->
+                                <div>
+                                    <h4 class="text-gray-400 text-sm mb-3">图片</h4>
+                                    ${item.images && item.images.length > 0 ? `
+                                        <div class="bg-gray-900 border border-gray-700 rounded-lg p-4 max-h-64 overflow-y-auto">
+                                            <div class="grid grid-cols-2 gap-2">
+                                                ${item.images.map((img, imgIndex) => `
+                                                    <div class="aspect-square">
+                                                        <img src="${img}" alt="${item.name || '图片'} ${imgIndex + 1}" class="w-full h-full object-cover rounded-lg cursor-pointer" onclick="openImageModal('${img}', ${JSON.stringify(item.images)})">
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    ` : `
+                                        <div class="bg-gray-900 border border-gray-700 rounded-lg h-64 flex items-center justify-center">
+                                            <div class="text-center">
+                                                <i class="fa fa-picture-o text-4xl text-gray-600 mb-2"></i>
+                                                <p class="text-gray-400">暂无图片</p>
+                                            </div>
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex justify-end space-x-4">
+                            <button id="editDetailBtn" class="btn bg-blue-600 text-white hover:bg-blue-500 flex items-center">
+                                <i class="fa fa-pencil mr-2"></i> 编辑
+                            </button>
+                            <button id="viewImagesBtn" class="btn bg-green-600 text-white hover:bg-green-500 flex items-center">
+                                <i class="fa fa-picture-o mr-2"></i> 查看图片
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // 添加到页面
+                document.body.appendChild(modal);
+                
+                // 关闭按钮事件
+                document.getElementById('closeDetailModal').addEventListener('click', function() {
+                    document.body.removeChild(modal);
+                });
+                
+                // 编辑按钮事件
+                document.getElementById('editDetailBtn').addEventListener('click', function() {
+                    document.body.removeChild(modal);
+                    openEditModal(index);
+                });
+                
+                // 查看图片按钮事件
+                document.getElementById('viewImagesBtn').addEventListener('click', function() {
+                    if (item.images && item.images.length > 0) {
+                        document.body.removeChild(modal);
+                        openImageModal(item.images[0], item.images);
+                    } else {
+                        alert('暂无图片');
+                    }
+                });
+                
+                // 点击模态框背景关闭
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        document.body.removeChild(modal);
+                    }
+                });
+            }
+        }
+
+        // 打开图片画廊页面
+        function openImageModal(imageSrc, images = []) {
+            // 创建图片画廊页面
+            const galleryPage = document.createElement('div');
+            galleryPage.className = 'fixed inset-0 bg-black/95 flex flex-col z-50';
+            galleryPage.id = 'imageGallery';
+            
+            galleryPage.innerHTML = `
+                <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                    <button id="backToDetailBtn" class="text-white hover:text-gray-300">
+                        <i class="fa fa-arrow-left text-xl"></i>
+                    </button>
+                    <h3 class="text-lg font-semibold text-white">图片画廊</h3>
+                    <div class="w-8"></div> <!-- 占位，保持标题居中 -->
+                </div>
+                <div class="flex-1 overflow-y-auto p-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            ${images.map((img, index) => `
+                                <div class="aspect-square relative">
+                                    <img src="${img}" alt="图片 ${index + 1}" class="w-full h-full object-cover rounded-lg cursor-pointer" onclick="showLargeImage('${img}')">
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+            `;
+            
+            document.body.appendChild(galleryPage);
+            
+            // 关闭按钮事件
+            document.getElementById('backToDetailBtn').addEventListener('click', function() {
+                document.body.removeChild(galleryPage);
+            });
+            
+            // 键盘事件
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    document.body.removeChild(galleryPage);
+                }
+            });
+        }
+        
+        // 显示大图
+        function showLargeImage(imageSrc) {
+            // 创建大图模态框
+            const largeImageModal = document.createElement('div');
+            largeImageModal.className = 'fixed inset-0 bg-black/95 flex items-center justify-center z-50';
+            largeImageModal.id = 'largeImageModal';
+            
+            largeImageModal.innerHTML = `
+                <div class="relative w-full max-w-4xl">
+                    <button id="closeLargeImageModal" class="absolute top-4 right-4 text-white bg-black/50 rounded-full p-2 z-10">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                    <img src="${imageSrc}" alt="放大图片" class="w-full h-auto max-h-[80vh] object-contain">
+                </div>
+            `;
+            
+            document.body.appendChild(largeImageModal);
+            
+            // 关闭按钮事件
+            document.getElementById('closeLargeImageModal').addEventListener('click', function() {
+                document.body.removeChild(largeImageModal);
+            });
+            
+            // 点击模态框背景关闭
+            largeImageModal.addEventListener('click', function(e) {
+                if (e.target === largeImageModal) {
+                    document.body.removeChild(largeImageModal);
+                }
+            });
+            
+            // 键盘事件
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    document.body.removeChild(largeImageModal);
+                }
+            });
+        }
+
+
+
+        // 打开编辑模态框
+        function openEditModal(index) {
+            const warehouseItems = JSON.parse(localStorage.getItem('warehouseItems') || '[]');
+            const item = warehouseItems[index];
+            
+            if (item) {
+                // 创建编辑模态框
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black/90 flex items-center justify-center z-50';
+                modal.id = 'editModal';
+                
+                modal.innerHTML = `
+                    <div class="bg-dark-card rounded-lg p-6 w-full max-w-4xl">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-semibold">编辑仓位</h3>
+                            <button id="closeEditModal" class="text-gray-400 hover:text-white">
+                                <i class="fa fa-times text-2xl"></i>
+                            </button>
+                        </div>
+                        <form id="editForm" class="space-y-6">
+                            <input type="hidden" id="editIndex" value="${index}">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- 左侧信息编辑 -->
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-gray-400 mb-2 text-sm">仓位</label>
+                                        <input type="text" id="editLocation" class="input" placeholder="输入仓位" value="${item.location || ''}">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-400 mb-2 text-sm">编码</label>
+                                        <input type="text" id="editCode" class="input" placeholder="输入编码" value="${item.code || ''}">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-400 mb-2 text-sm">名称</label>
+                                        <input type="text" id="editName" class="input" placeholder="输入名称" value="${item.name || ''}">
+                                    </div>
+                                    
+                                    ${item.createdAt ? `
+                                        <div>
+                                            <label class="block text-gray-400 mb-2 text-sm">创建时间</label>
+                                            <input type="text" id="editCreatedAt" class="input bg-gray-800" disabled value="${item.createdAt}">
+                                        </div>
+                                    ` : ''}
+
+                                </div>
+                                
+                                <!-- 右侧图片 -->
+                                <div>
+                                    <label class="block text-gray-400 mb-2 text-sm">图片</label>
+                                    <div class="bg-gray-900 border border-gray-700 rounded-lg p-4 mb-4 max-h-64 overflow-y-auto">
+                                        <div id="editImagePreview" class="grid grid-cols-2 gap-2">
+                                            ${item.images && item.images.length > 0 ? item.images.map((img, imgIndex) => `
+                                                <div class="relative aspect-square">
+                                                    <img src="${img}" alt="${item.name || '图片'} ${imgIndex + 1}" class="w-full h-full object-cover rounded-lg cursor-pointer" onclick="openImageModal('${img}', ${JSON.stringify(item.images)})">
+                                                    <button type="button" class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600" onclick="removeImageFromEdit(${imgIndex}, this)">
+                                                        <i class="fa fa-trash text-xs"></i>
+                                                    </button>
+                                                </div>
+                                            `).join('') : `
+                                                <div class="col-span-2 flex items-center justify-center h-48 text-center">
+                                                    <div>
+                                                        <i class="fa fa-picture-o text-4xl text-gray-600 mb-2"></i>
+                                                        <p class="text-gray-400">暂无图片</p>
+                                                    </div>
+                                                </div>
+                                            `}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <input type="file" id="editImage" class="input w-full mb-4" accept="image/*" capture="camera" multiple>
+                                        <button type="button" id="selectImageBtn" class="btn bg-gray-700 text-white hover:bg-gray-600 w-full flex items-center justify-center">
+                                            <i class="fa fa-upload mr-2"></i> 选择图片
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 底部按钮 -->
+                            <div class="flex justify-end space-x-4">
+                                <button type="button" id="cancelEditBtn" class="btn bg-gray-700 text-white hover:bg-gray-600">取消</button>
+                                <button type="submit" class="btn btn-primary">保存</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // 关闭按钮事件
+                document.getElementById('closeEditModal').addEventListener('click', function() {
+                    document.body.removeChild(modal);
+                });
+                
+                document.getElementById('cancelEditBtn').addEventListener('click', function() {
+                    document.body.removeChild(modal);
+                });
+                
+                // 选择图片按钮点击事件
+                document.getElementById('selectImageBtn').addEventListener('click', function() {
+                    document.getElementById('editImage').click();
+                });
+                
+                // 图片选择事件
+                document.getElementById('editImage').addEventListener('change', function(e) {
+                    const files = e.target.files;
+                    const imagePreview = document.getElementById('editImagePreview');
+                    
+                    if (files && files.length > 0) {
+                        // 保留原有图片
+                        let existingImages = item.images || [];
+                        let loadedCount = 0;
+                        const totalFiles = files.length;
+                        
+                        for (let i = 0; i < totalFiles; i++) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                existingImages.push(e.target.result);
+                                loadedCount++;
+                                if (loadedCount === totalFiles) {
+                                    // 更新预览
+                                    imagePreview.innerHTML = existingImages.map((img, imgIndex) => `
+                                        <div class="relative">
+                                            <img src="${img}" alt="图片 ${imgIndex + 1}" class="w-full h-24 object-cover rounded-lg cursor-pointer" onclick="openImageModal('${img}')">
+                                            <button type="button" class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600" onclick="removeImageFromEdit(${imgIndex}, this)">
+                                                <i class="fa fa-trash text-xs"></i>
+                                            </button>
+                                        </div>
+                                    `).join('');
+                                }
+                            };
+                            reader.readAsDataURL(files[i]);
+                        }
+                    }
+                });
+                
+                // 表单提交事件
+                document.getElementById('editForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const index = document.getElementById('editIndex').value;
+                    const location = document.getElementById('editLocation').value.trim();
+                    const code = document.getElementById('editCode').value.trim();
+                    const name = document.getElementById('editName').value.trim();
+                    
+                    if (!location || !code) {
+                        alert('请填写仓位和编码');
+                        return;
+                    }
+                    
+                    // 收集所有图片
+                    const imageElements = document.querySelectorAll('#editImagePreview img');
+                    const images = Array.from(imageElements).map(img => img.src);
+                    
+                    // 更新数据
+                    const warehouseItems = JSON.parse(localStorage.getItem('warehouseItems') || '[]');
+                    warehouseItems[index] = {
+                        ...warehouseItems[index],
+                        location: location,
+                        code: code,
+                        name: name,
+                        updatedAt: new Date().toLocaleString('zh-CN')
+                    };
+                    
+                    if (images.length > 0) {
+                        warehouseItems[index].images = images;
+                    } else {
+                        delete warehouseItems[index].images;
+                    }
+                    
+                    localStorage.setItem('warehouseItems', JSON.stringify(warehouseItems));
+                    document.body.removeChild(modal);
+                    loadItems();
+                });
+                
+                // 点击模态框背景关闭
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        document.body.removeChild(modal);
+                    }
+                });
+            }
+        }
+
+        // 从编辑中移除图片
+        function removeImageFromEdit(index, button) {
+            const imageElement = button.closest('div');
+            imageElement.remove();
+        }
+
+        // 删除项目
+        function deleteItem(index) {
+            if (confirm('确定要删除这个仓位吗？\n此操作不可恢复。')) {
+                const warehouseItems = JSON.parse(localStorage.getItem('warehouseItems') || '[]');
+                warehouseItems.splice(index, 1);
+            localStorage.setItem('warehouseItems', JSON.stringify(warehouseItems));
+            loadItems();
+            }
+        }
+    </script>
+</body>
+</html>
